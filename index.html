@@ -38,6 +38,13 @@
             box-shadow: 0 15px 30px -5px rgba(30, 64, 175, 0.3);
         }
 
+        .btn-primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }
@@ -285,6 +292,7 @@
                 
                 const username = $('#username').val().trim();
                 const password = $('#password').val().trim();
+                const $btnLogin = $('#btnLogin');
 
                 if (!username || !password) {
                     Swal.fire({
@@ -295,6 +303,9 @@
                     });
                     return;
                 }
+
+                // ล็อกปุ่มและแสดงการหมุนโหลด
+                $btnLogin.prop('disabled', true).html('⏳ กำลังตรวจสอบ...');
 
                 // แสดง SweetAlert โหลดดิ้งระหว่างตรวจสอบ
                 Swal.fire({
@@ -321,10 +332,21 @@
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
-                                    // ไปยังหน้า list.html เมื่อ Login ผ่าน
-                                    window.location.href = 'list.html';
+                                    // โหลดเนื้อหาของ list.html มาแสดงผลแทนที่ใน Google Apps Script
+                                    google.script.run
+                                        .withSuccessHandler(function(htmlContent) {
+                                            document.open();
+                                            document.write(htmlContent);
+                                            document.close();
+                                        })
+                                        .withFailureHandler(function(err) {
+                                            // สำรองกรณีเกิดข้อผิดพลาดในการดึงหน้า list ให้ลอง redirect
+                                            window.location.href = 'list.html';
+                                        })
+                                        .loadListPageContent();
                                 });
                             } else {
+                                $btnLogin.prop('disabled', false).html('เข้าสู่ระบบ');
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'เข้าสู่ระบบไม่สำเร็จ',
@@ -334,19 +356,29 @@
                             }
                         })
                         .withFailureHandler(function(error) {
+                            $btnLogin.prop('disabled', false).html('เข้าสู่ระบบ');
                             Swal.fire({
                                 icon: 'error',
                                 title: 'เกิดข้อผิดพลาด',
-                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + error.message,
+                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + (error.message || error),
                                 confirmButtonColor: '#2563eb'
                             });
                         })
-                        .checkLogin(username, password);
+                        .checkLogin(username, password); // เรียกใช้ฟังก์ชัน checkLogin ใน code.gs
                 } else {
                     // Fallback กรณีทดสอบนอก Google Apps Script Environment (Local Preview)
                     console.warn("ไม่พบ google.script.run (เปิดทดสอบแบบ Local File)");
                     setTimeout(() => {
                         if (username === 'admin' && password === '1234') {
+                            const mockUser = {
+                                userId: 'ADM-000001',
+                                username: 'admin',
+                                firstname: 'ผู้ดูแลระบบ',
+                                lastname: 'สูงสุด',
+                                position: 'ผู้ดูแลระบบสารสนเทศ',
+                                organization: 'ศูนย์เทคโนโลยีสารสนเทศ'
+                            };
+                            sessionStorage.setItem('currentUser', JSON.stringify(mockUser));
                             Swal.fire({
                                 icon: 'success',
                                 title: 'เข้าสู่ระบบสำเร็จ (Demo)',
@@ -356,10 +388,11 @@
                                 window.location.href = 'list.html';
                             });
                         } else {
+                            $btnLogin.prop('disabled', false).html('เข้าสู่ระบบ');
                             Swal.fire({
                                 icon: 'error',
                                 title: 'เข้าสู่ระบบไม่สำเร็จ',
-                                text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (ทดสอบ: admin / 1234)',
+                                text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (ทดสอบ Local: admin / 1234)',
                                 confirmButtonColor: '#2563eb'
                             });
                         }
@@ -456,6 +489,7 @@
 
                 const password = $('#reg_password').val();
                 const confirmPassword = $('#confirm_password').val();
+                const $submitBtn = $('#submitRegisterBtn');
 
                 if (password !== confirmPassword) {
                     Swal.fire({
@@ -477,6 +511,8 @@
                     });
                     return;
                 }
+
+                $submitBtn.prop('disabled', true).text('กำลังบันทึก...');
 
                 const formData = {
                     firstname: $('#reg_firstname').val().trim(),
@@ -501,6 +537,7 @@
                 if (typeof google !== 'undefined' && google.script && google.script.run) {
                     google.script.run
                         .withSuccessHandler(function(response) {
+                            $submitBtn.prop('disabled', false).text('ยืนยันสมัครสมาชิก');
                             if (response && response.success) {
                                 Swal.fire({
                                     icon: 'success',
@@ -520,15 +557,17 @@
                             }
                         })
                         .withFailureHandler(function(error) {
+                            $submitBtn.prop('disabled', false).text('ยืนยันสมัครสมาชิก');
                             Swal.fire({
                                 icon: 'error',
                                 title: 'เกิดข้อผิดพลาดระบบ',
-                                text: error.message,
+                                text: error.message || error,
                                 confirmButtonColor: '#2563eb'
                             });
                         })
                         .registerUser(formData);
                 } else {
+                    $submitBtn.prop('disabled', false).text('ยืนยันสมัครสมาชิก');
                     Swal.fire({
                         icon: 'info',
                         title: 'โหมดทดสอบ (Demo Mode)',
