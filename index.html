@@ -348,57 +348,49 @@
                     .registerUser(formData);
             });
 
-            // --- 5. จัดการการ Login ---
-            $('#loginForm').submit(function(e) {
-                e.preventDefault();
+            // --- 5. จัดการการ Login (ปรับปรุงความเร็ว) ---
+$('#loginForm').submit(function(e) {
+    e.preventDefault();
 
-                const username = $('#username').val();
-                const password = $('#password').val();
+    const username = $('#username').val();
+    const password = $('#password').val();
 
+    Swal.fire({
+        title: 'กำลังตรวจสอบ...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    google.script.run
+        .withSuccessHandler(function(response) {
+            if (response.success) {
+                // บันทึกข้อมูลผู้ใช้ไว้ใน Session Storage
+                sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+                
+                // ⚡ นำ HTML หน้า list มาเปลี่ยนใส่ใน Body ทันที
+                $('#appBody')
+                    .removeClass('bg-slate-900 bg-custom-image flex items-center justify-center')
+                    .addClass('bg-gray-100');
+                $('#appBody').html(response.htmlContent);
+
+                // แสดงแจ้งเตือนสำเร็จสั้นๆ 1 วินาที
                 Swal.fire({
-                    title: 'กำลังตรวจสอบ...',
-                    text: 'กรุณารอสักครู่',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
+                    icon: 'success',
+                    title: 'เข้าสู่ระบบสำเร็จ!',
+                    text: 'ยินดีต้อนรับ คุณ ' + response.user.firstname,
+                    timer: 1000,
+                    showConfirmButton: false
                 });
-
-                google.script.run
-                    .withSuccessHandler(function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'เข้าสู่ระบบสำเร็จ!',
-                                text: 'ยินดีต้อนรับ คุณ ' + response.user.firstname,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                // บันทึกข้อมูลผู้ใช้ไว้ใน Session Storage
-                                sessionStorage.setItem('currentUser', JSON.stringify(response.user));
-                                
-                                // โหลดเนื้อหา list.html มาแสดงผลในหน้าเดิม
-                                loadListPage();
-                            });
-                        } else {
-                            Swal.fire('เข้าสู่ระบบไม่สำเร็จ', response.message, 'error');
-                        }
-                    })
-                    .withFailureHandler(function(err) {
-                        Swal.fire('เกิดข้อผิดพลาด', err.toString(), 'error');
-                    })
-                    .checkLogin(username, password);
-            });
-
-            // ฟังก์ชันสำหรับเปลี่ยนหน้าเป็น list.html Dynamic
-            function loadListPage() {
-                google.script.run
-                    .withSuccessHandler(function(htmlContent) {
-                        // เปลี่ยนคลาสของ Body และเปลี่ยนเนื้อหาทั้งหมด
-                        $('#appBody').removeClass('bg-slate-900 bg-custom-image flex items-center justify-center').addClass('bg-gray-100');
-                        $('#appBody').html(htmlContent);
-                    })
-                    .loadListPageContent();
+            } else {
+                Swal.fire('เข้าสู่ระบบไม่สำเร็จ', response.message, 'error');
             }
-        });
+        })
+        .withFailureHandler(function(err) {
+            Swal.fire('เกิดข้อผิดพลาด', err.toString(), 'error');
+        })
+        .checkLogin(username, password);
+});
     </script>
 </body>
 </html>
