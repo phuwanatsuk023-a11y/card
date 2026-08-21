@@ -469,21 +469,23 @@
 
         // โครงสร้าง Template Config ใหม่ (ตัด Photo และ QR ออก เพิ่มหมู่โลหิต + ข้อมูลผู้บริหาร/อปท.)
         let tplConfig = {
-            citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
-            nameX: 17, nameY: 34, nameSize: 1.6,
-            positionX: 17, positionY: 43, positionSize: 1.4,
-            bloodTypeX: 17, bloodTypeY: 52, bloodTypeSize: 1.3,
-            cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
-            issueDateX: 62, issueDateY: 78, dateSize: 1.2,
-            expireDateX: 85, expireDateY: 78,
-            headNameX: 65, headNameY: 30, headNameSize: 1.4,
-            headPositionX: 65, headPositionY: 38, headPositionSize: 1.2,
-            agencyProvinceX: 65, agencyProvinceY: 46, agencyProvinceSize: 1.3
-        };
+    citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
+    nameX: 17, nameY: 34, nameSize: 1.6,
+    positionX: 17, positionY: 43, positionSize: 1.4,
+    bloodTypeX: 17, bloodTypeY: 52, bloodTypeSize: 1.3,
+    cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
+    issueDateX: 62, issueDateY: 78, dateSize: 1.2,
+    expireDateX: 85, expireDateY: 78,
+    headNameX: 65, headNameY: 30, headNameSize: 1.4,
+    headPositionX: 65, headPositionY: 38, headPositionSize: 1.2,
+    agencyProvinceX: 65, agencyProvinceY: 46, agencyProvinceSize: 1.3
+};
 
-        if(localStorage.getItem('gov_tpl_config')) {
-            tplConfig = JSON.parse(localStorage.getItem('gov_tpl_config'));
-        }
+// ใช้ Spread Operator เพื่อไม่ให้ค่าใหม่ที่เพิ่งเพิ่มเข้ามาหายไป
+if(localStorage.getItem('gov_tpl_config')) {
+    const savedConfig = JSON.parse(localStorage.getItem('gov_tpl_config'));
+    tplConfig = { ...tplConfig, ...savedConfig };
+}
 
         let currentPrintList = [];
 
