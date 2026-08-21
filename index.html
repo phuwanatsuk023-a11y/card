@@ -859,7 +859,43 @@
                 }
             }, 500);
         }
-
+function editEmployee(id) {
+    if (!db.employees || db.employees.length === 0) {
+        showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
+        return;
+    }
+    // ใช้ String() เพื่อป้องกันปัญหาชนิดข้อมูล ID ไม่ตรงกัน (String vs Number)
+    const emp = db.employees.find(x => String(x.ID) === String(id));
+    if(!emp) {
+        showToast('ไม่พบข้อมูลเจ้าหน้าที่รายนี้', 'error');
+        return;
+    }
+    
+    document.getElementById('form-title').innerText = 'แก้ไขข้อมูลเจ้าหน้าที่';
+    document.getElementById('f_id').value = emp.ID;
+    document.getElementById('f_citizenId').value = emp.CitizenID || '';
+    document.getElementById('f_prefix').value = emp.Prefix || '';
+    document.getElementById('f_firstName').value = emp.FirstName || '';
+    document.getElementById('f_lastName').value = emp.LastName || '';
+    document.getElementById('f_empId').value = emp.EmployeeID || '';
+    document.getElementById('f_position').value = emp.Position || '';
+    document.getElementById('f_level').value = emp.Level || '';
+    document.getElementById('f_department').value = emp.Department || '';
+    document.getElementById('f_cardNum').value = emp.CardNumber || '';
+    
+    const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
+    document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
+    document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
+    
+    document.getElementById('f_photoURL').value = emp.PhotoURL || '';
+    if(emp.PhotoURL) {
+        document.getElementById('f_photo_preview').src = emp.PhotoURL;
+        document.getElementById('f_photo_preview').classList.remove('hidden');
+        document.getElementById('f_photo_placeholder').classList.add('hidden');
+    }
+    
+    nav('form');
+}
         
 
     </script>
