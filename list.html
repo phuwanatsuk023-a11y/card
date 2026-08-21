@@ -906,7 +906,7 @@
             const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
             html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize);
             
-            const bloodTypeVal = emp.BloodType ? `หมู่โลหิต ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
+            const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
             html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize);
 
             html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
