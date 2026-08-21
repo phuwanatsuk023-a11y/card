@@ -930,7 +930,37 @@ function editEmployee(id) {
         nav('print-preview');
     }
 }  
-
+function confirmCrop() {
+    if(!cropper) return;
+    const canvas = cropper.getCroppedCanvas({ width: 300, height: 400 });
+    const base64Img = canvas.toDataURL('image/jpeg', 0.8);
+    
+    document.getElementById('crop-modal').classList.add('hidden');
+    document.getElementById('f_photo_preview').src = base64Img;
+    document.getElementById('f_photo_preview').classList.remove('hidden');
+    document.getElementById('f_photo_placeholder').classList.add('hidden');
+    
+    if(USE_LOCAL) {
+        document.getElementById('f_photoURL').value = base64Img;
+    } else {
+        showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
+        const saveBtn = document.querySelector('#emp-form button[type="submit"]');
+        saveBtn.disabled = true; // ล็อกปุ่มบันทึกป้องกันกดก่อนอัปโหลดเสร็จ
+        
+        fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
+            if(res.status==='success') {
+                document.getElementById('f_photoURL').value = res.data;
+                showToast('อัปโหลดสำเร็จ', 'success');
+            } else {
+                showToast('อัปโหลดรูปไม่สำเร็จ: ' + res.message, 'error');
+            }
+        }).catch(err => {
+            showToast('เกิดข้อผิดพลาดในการอัปโหลดรูป', 'error');
+        }).finally(() => {
+            saveBtn.disabled = false; // ปลดล็อกปุ่ม
+        });
+    }
+}
     </script>
 </body>
 </html>
