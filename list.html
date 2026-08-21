@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดทำและพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</title>
     
+    <!-- 🔒 ระบบตรวจสอบการเข้าสู่ระบบ (Authentication Guard) -->
+    <script>
+        (function() {
+            const currentUser = sessionStorage.getItem('currentUser');
+            if (!currentUser) {
+                alert('กรุณาเข้าสู่ระบบก่อนเข้าใช้งาน');
+                window.location.href = 'index.html';
+            }
+        })();
+    </script>
+
     <!-- Fonts: Noto Sans Thai -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -112,7 +123,7 @@
                 <div class="w-10 h-10 rounded-full bg-gov-blue flex items-center justify-center text-white border-2 border-gov-gold">
                     <i class="fa-solid fa-user"></i>
                 </div>
-                <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ">
+                <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
                     <i class="fa-solid fa-right-from-bracket text-xl"></i>
                 </button>
             </div>
@@ -620,8 +631,15 @@
         }
 
         function editEmployee(id) {
-            const emp = db.employees.find(x => x.ID === id);
-            if(!emp) return;
+            if (!db.employees || db.employees.length === 0) {
+                showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
+                return;
+            }
+            const emp = db.employees.find(x => String(x.ID) === String(id));
+            if(!emp) {
+                showToast('ไม่พบข้อมูลเจ้าหน้าที่รายนี้', 'error');
+                return;
+            }
             
             document.getElementById('form-title').innerText = 'แก้ไขข้อมูลเจ้าหน้าที่';
             document.getElementById('f_id').value = emp.ID;
@@ -687,11 +705,20 @@
                 document.getElementById('f_photoURL').value = base64Img;
             } else {
                 showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
+                const saveBtn = document.querySelector('#emp-form button[type="submit"]');
+                saveBtn.disabled = true;
+                
                 fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
                     if(res.status==='success') {
                         document.getElementById('f_photoURL').value = res.data;
                         showToast('อัปโหลดสำเร็จ', 'success');
+                    } else {
+                        showToast('อัปโหลดรูปไม่สำเร็จ: ' + res.message, 'error');
                     }
+                }).catch(err => {
+                    showToast('เกิดข้อผิดพลาดในการอัปโหลดรูป', 'error');
+                }).finally(() => {
+                    saveBtn.disabled = false;
                 });
             }
         }
@@ -802,16 +829,21 @@
         }
 
         function previewCard(empIds) {
+            if (!db.employees || db.employees.length === 0) {
+                showToast('ยังไม่มีข้อมูลในระบบ', 'error');
+                return;
+            }
+            
             currentPrintList = [];
             const printPreviewContainer = document.getElementById('print-preview-container');
             printPreviewContainer.innerHTML = '';
 
-            empIds.forEach((id, idx) => {
-                const emp = db.employees.find(x => x.ID === id);
+            empIds.forEach((id) => {
+                const emp = db.employees.find(x => String(x.ID) === String(id));
                 if(!emp) return;
                 
                 if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
-                    showToast(`ข้อมูลของ ${emp.FirstName} ไม่ครบถ้วน (ต้องมีรูป/เลขบัตร)`, 'error');
+                    showToast(`ข้อมูลของ ${emp.FirstName || id} ไม่ครบถ้วน (ต้องมีรูป, เลขที่บัตร และชื่อ)`, 'error');
                     return;
                 }
 
@@ -859,108 +891,6 @@
                 }
             }, 500);
         }
-function editEmployee(id) {
-    if (!db.employees || db.employees.length === 0) {
-        showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
-        return;
-    }
-    // ใช้ String() เพื่อป้องกันปัญหาชนิดข้อมูล ID ไม่ตรงกัน (String vs Number)
-    const emp = db.employees.find(x => String(x.ID) === String(id));
-    if(!emp) {
-        showToast('ไม่พบข้อมูลเจ้าหน้าที่รายนี้', 'error');
-        return;
-    }
-    
-    document.getElementById('form-title').innerText = 'แก้ไขข้อมูลเจ้าหน้าที่';
-    document.getElementById('f_id').value = emp.ID;
-    document.getElementById('f_citizenId').value = emp.CitizenID || '';
-    document.getElementById('f_prefix').value = emp.Prefix || '';
-    document.getElementById('f_firstName').value = emp.FirstName || '';
-    document.getElementById('f_lastName').value = emp.LastName || '';
-    document.getElementById('f_empId').value = emp.EmployeeID || '';
-    document.getElementById('f_position').value = emp.Position || '';
-    document.getElementById('f_level').value = emp.Level || '';
-    document.getElementById('f_department').value = emp.Department || '';
-    document.getElementById('f_cardNum').value = emp.CardNumber || '';
-    
-    const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
-    document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
-    document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
-    
-    document.getElementById('f_photoURL').value = emp.PhotoURL || '';
-    if(emp.PhotoURL) {
-        document.getElementById('f_photo_preview').src = emp.PhotoURL;
-        document.getElementById('f_photo_preview').classList.remove('hidden');
-        document.getElementById('f_photo_placeholder').classList.add('hidden');
-    }
-    
-    nav('form');
-}
-      function previewCard(empIds) {
-    if (!db.employees || db.employees.length === 0) {
-        showToast('ยังไม่มีข้อมูลในระบบ', 'error');
-        return;
-    }
-    
-    currentPrintList = [];
-    const printPreviewContainer = document.getElementById('print-preview-container');
-    printPreviewContainer.innerHTML = '';
-
-    empIds.forEach((id) => {
-        const emp = db.employees.find(x => String(x.ID) === String(id));
-        if(!emp) return;
-        
-        if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
-            showToast(`ข้อมูลของ ${emp.FirstName || id} ไม่ครบถ้วน (ต้องมีรูป, เลขที่บัตร และชื่อ)`, 'error');
-            return;
-        }
-
-        currentPrintList.push(emp);
-        
-        const cardDiv = document.createElement('div');
-        const uuid = 'prev_' + Math.random().toString(36).substring(7);
-        cardDiv.id = uuid;
-        cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
-        printPreviewContainer.appendChild(cardDiv);
-        
-        renderPreviewBoard(emp, uuid);
-    });
-
-    if(currentPrintList.length > 0) {
-        nav('print-preview');
-    }
-}  
-function confirmCrop() {
-    if(!cropper) return;
-    const canvas = cropper.getCroppedCanvas({ width: 300, height: 400 });
-    const base64Img = canvas.toDataURL('image/jpeg', 0.8);
-    
-    document.getElementById('crop-modal').classList.add('hidden');
-    document.getElementById('f_photo_preview').src = base64Img;
-    document.getElementById('f_photo_preview').classList.remove('hidden');
-    document.getElementById('f_photo_placeholder').classList.add('hidden');
-    
-    if(USE_LOCAL) {
-        document.getElementById('f_photoURL').value = base64Img;
-    } else {
-        showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
-        const saveBtn = document.querySelector('#emp-form button[type="submit"]');
-        saveBtn.disabled = true; // ล็อกปุ่มบันทึกป้องกันกดก่อนอัปโหลดเสร็จ
-        
-        fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
-            if(res.status==='success') {
-                document.getElementById('f_photoURL').value = res.data;
-                showToast('อัปโหลดสำเร็จ', 'success');
-            } else {
-                showToast('อัปโหลดรูปไม่สำเร็จ: ' + res.message, 'error');
-            }
-        }).catch(err => {
-            showToast('เกิดข้อผิดพลาดในการอัปโหลดรูป', 'error');
-        }).finally(() => {
-            saveBtn.disabled = false; // ปลดล็อกปุ่ม
-        });
-    }
-}
     </script>
 </body>
 </html>
