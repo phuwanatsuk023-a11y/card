@@ -459,7 +459,13 @@
             }]));
         }
 
-        let agencySettings = { head_name: '', head_position: '', agency_name: '', province: '', agency_logo: '' };
+        let agencySettings = JSON.parse(localStorage.getItem('gov_agency_settings')) || { 
+    head_name: 'นายสมศักดิ์ รักชาติ', 
+    head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
+    agency_name: 'เทศบาลตำบลตัวอย่าง', 
+    province: 'จังหวัดตัวอย่าง', 
+    agency_logo: '' 
+};
 
         // โครงสร้าง Template Config ใหม่ (ตัด Photo และ QR ออก เพิ่มหมู่โลหิต + ข้อมูลผู้บริหาร/อปท.)
         let tplConfig = {
@@ -852,45 +858,48 @@
 
         // แสดงผลบัตร (ตัด Photo Box และ QR Code ออก พร้อมเพิ่มฟิลด์ตามความต้องการ)
         function renderPreviewBoard(emp, targetContainerId) {
-            const container = document.getElementById(targetContainerId);
-            if(!container) return;
+    const container = document.getElementById(targetContainerId);
+    if(!container) return;
 
-            const formatThaiDate = (dStr) => {
-                if(!dStr) return '-';
-                const d = new Date(dStr);
-                if(isNaN(d.getTime())) return '-';
-                const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-                return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
-            };
+    const formatThaiDate = (dStr) => {
+        if(!dStr) return '-';
+        const d = new Date(dStr);
+        if(isNaN(d.getTime())) return '-';
+        const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
+    };
 
-            let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
-            
-            const createTxt = (id, text, x, y, size, fw='normal') => {
-                return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw};">${text}</div>`;
-            };
+    let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
+    
+    const createTxt = (id, text, x, y, size, fw='normal') => {
+        return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw};">${text}</div>`;
+    };
 
-            // ข้อมูลพนักงาน
-            html += createTxt('citizenId', (emp.CitizenID||'-').split('').join(' '), tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, 'bold');
-            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, 'bold');
-            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize);
-            html += createTxt('bloodType', emp.BloodType ? `หมู่โลหิต ${emp.BloodType}` : '', tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize);
+    // 1. ข้อมูลพนักงาน
+    html += createTxt('citizenId', (emp.CitizenID||'-').split('').join(' '), tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, 'bold');
+    html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, 'bold');
+    html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize);
+    
+    // แสดงหมู่โลหิต (ใส่ fallback ถ้าเป็นหน้าแก้ไข template)
+    const bloodTypeVal = emp.BloodType ? `หมู่โลหิต ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
+    html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize);
 
-            // ข้อมูลเฉพาะบัตร
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize);
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY, tplConfig.dateSize);
+    // 2. ข้อมูลเฉพาะบัตร
+    html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
+    html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize);
+    html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY, tplConfig.dateSize);
 
-            // ข้อมูลหน่วยงานจาก LocalStorage
-            const headName = agencySettings.head_name || '';
-            const headPos = agencySettings.head_position || '';
-            const agencyProv = (agencySettings.agency_name || '') + (agencySettings.province ? ` ${agencySettings.province}` : '');
+    // 3. ข้อมูลหน่วยงาน (ดึงจาก agencySettings หรือแสดงค่าตัวอย่างหากยังไม่ได้กรอก)
+    const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
+    const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
+    const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` จ.${agencySettings.province}` : '');
 
-            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, 'bold');
-            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize);
-            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, 'bold');
+    html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, 'bold');
+    html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize);
+    html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, 'bold');
 
-            container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
-        }
+    container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
+}
 
         function prepareBatchPrint() {
             const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
