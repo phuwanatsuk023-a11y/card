@@ -38,13 +38,6 @@
             box-shadow: 0 15px 30px -5px rgba(30, 64, 175, 0.3);
         }
 
-        .btn-primary:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }
@@ -258,18 +251,16 @@
 
     <!-- JavaScript สำหรับควบคุมการทำงานและเชื่อมต่อ Google Apps Script -->
     <script>
-        // ตัวแปรเก็บ Base64 รูปภาพโปรไฟล์
         let profileBase64Data = '';
 
         $(document).ready(function() {
             const $modal = $('#registerModal');
             const $modalContainer = $('#modalContainer');
 
-            // SVG Icons สำหรับสลับเปิด/ปิดตาของรหัสผ่าน
             const eyeOpenSvg = `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
             const eyeClosedSvg = `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.032 10.032 0 012.238-3.792m3.674-2.222A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.027 10.027 0 01-4.132 5.411m0 0L21 21" /></svg>`;
 
-            // แสดง QR Code สำหรับติดต่อผู้ดูแลระบบ
+            // แสดง QR Code ติดต่อผู้ดูแลระบบ
             $('#openQrModal').on('click', function(e) {
                 e.preventDefault();
                 Swal.fire({
@@ -285,14 +276,13 @@
             });
 
             // -----------------------------------------------------------
-            // 1. ระบบจัดการฟอร์มเข้าสู่ระบบ (LOGIN PROCESS)
+            // 1. ระบบจัดการฟอร์มเข้าสู่ระบบ (LOGIN PROCESS - GOOGLE SHEET ONLY)
             // -----------------------------------------------------------
             $('#loginForm').on('submit', function(e) {
                 e.preventDefault();
                 
                 const username = $('#username').val().trim();
                 const password = $('#password').val().trim();
-                const $btnLogin = $('#btnLogin');
 
                 if (!username || !password) {
                     Swal.fire({
@@ -304,100 +294,60 @@
                     return;
                 }
 
-                // ล็อกปุ่มและแสดงการหมุนโหลด
-                $btnLogin.prop('disabled', true).html('⏳ กำลังตรวจสอบ...');
+                // ตรวจสอบว่าถูกรันในสภาพแวดล้อม Google Apps Script หรือไม่
+                if (typeof google === 'undefined' || !google.script || !google.script.run) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่สามารถเชื่อมต่อได้',
+                        text: 'ระบบนี้ต้องเปิดใช้งานผ่าน Google Apps Script Web App เท่านั้น ไม่รองรับการเปิดไฟล์ HTML โดยตรง',
+                        confirmButtonColor: '#2563eb'
+                    });
+                    return;
+                }
 
-                // แสดง SweetAlert โหลดดิ้งระหว่างตรวจสอบ
+                // แสดง Loading ระหว่างดึงข้อมูลจาก Google Sheet
                 Swal.fire({
                     title: 'กำลังเข้าสู่ระบบ...',
-                    text: 'กำลังตรวจสอบข้อมูลกับฐานข้อมูล Google Sheets',
+                    text: 'กำลังตรวจสอบข้อมูลกับ Google Sheets',
                     allowOutsideClick: false,
                     didOpen: () => {
                         Swal.showLoading();
                     }
                 });
 
-                // ตรวจสอบว่าเรียกใช้งานผ่าน Google Apps Script Environment หรือไม่
-                if (typeof google !== 'undefined' && google.script && google.script.run) {
-                    google.script.run
-                        .withSuccessHandler(function(response) {
-                            if (response && response.success) {
-                                // บันทึกข้อมูลผู้ใช้ลง sessionStorage
-                                sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+                // ตรวจสอบข้อมูลกับ Code.gs -> Google Sheet จริง
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response && response.success) {
+                            sessionStorage.setItem('currentUser', JSON.stringify(response.user));
 
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'เข้าสู่ระบบสำเร็จ!',
-                                    text: 'ยินดีต้อนรับ ' + (response.user.firstname || username),
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                }).then(() => {
-                                    // โหลดเนื้อหาของ list.html มาแสดงผลแทนที่ใน Google Apps Script
-                                    google.script.run
-                                        .withSuccessHandler(function(htmlContent) {
-                                            document.open();
-                                            document.write(htmlContent);
-                                            document.close();
-                                        })
-                                        .withFailureHandler(function(err) {
-                                            // สำรองกรณีเกิดข้อผิดพลาดในการดึงหน้า list ให้ลอง redirect
-                                            window.location.href = 'list.html';
-                                        })
-                                        .loadListPageContent();
-                                });
-                            } else {
-                                $btnLogin.prop('disabled', false).html('เข้าสู่ระบบ');
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'เข้าสู่ระบบไม่สำเร็จ',
-                                    text: response ? response.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
-                                    confirmButtonColor: '#2563eb'
-                                });
-                            }
-                        })
-                        .withFailureHandler(function(error) {
-                            $btnLogin.prop('disabled', false).html('เข้าสู่ระบบ');
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'เกิดข้อผิดพลาด',
-                                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + (error.message || error),
-                                confirmButtonColor: '#2563eb'
-                            });
-                        })
-                        .checkLogin(username, password); // เรียกใช้ฟังก์ชัน checkLogin ใน code.gs
-                } else {
-                    // Fallback กรณีทดสอบนอก Google Apps Script Environment (Local Preview)
-                    console.warn("ไม่พบ google.script.run (เปิดทดสอบแบบ Local File)");
-                    setTimeout(() => {
-                        if (username === 'admin' && password === '1234') {
-                            const mockUser = {
-                                userId: 'ADM-000001',
-                                username: 'admin',
-                                firstname: 'ผู้ดูแลระบบ',
-                                lastname: 'สูงสุด',
-                                position: 'ผู้ดูแลระบบสารสนเทศ',
-                                organization: 'ศูนย์เทคโนโลยีสารสนเทศ'
-                            };
-                            sessionStorage.setItem('currentUser', JSON.stringify(mockUser));
                             Swal.fire({
                                 icon: 'success',
-                                title: 'เข้าสู่ระบบสำเร็จ (Demo)',
+                                title: 'เข้าสู่ระบบสำเร็จ!',
+                                text: 'ยินดีต้อนรับ ' + (response.user.firstname || username),
                                 timer: 1500,
                                 showConfirmButton: false
                             }).then(() => {
                                 window.location.href = 'list.html';
                             });
                         } else {
-                            $btnLogin.prop('disabled', false).html('เข้าสู่ระบบ');
                             Swal.fire({
                                 icon: 'error',
                                 title: 'เข้าสู่ระบบไม่สำเร็จ',
-                                text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (ทดสอบ Local: admin / 1234)',
+                                text: response ? response.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
                                 confirmButtonColor: '#2563eb'
                             });
                         }
-                    }, 800);
-                }
+                    })
+                    .withFailureHandler(function(error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์',
+                            text: error.message || 'ไม่สามารถติดต่อ Google Apps Script ได้',
+                            confirmButtonColor: '#2563eb'
+                        });
+                    })
+                    .checkLogin(username, password);
             });
 
             // -----------------------------------------------------------
@@ -489,7 +439,6 @@
 
                 const password = $('#reg_password').val();
                 const confirmPassword = $('#confirm_password').val();
-                const $submitBtn = $('#submitRegisterBtn');
 
                 if (password !== confirmPassword) {
                     Swal.fire({
@@ -512,7 +461,15 @@
                     return;
                 }
 
-                $submitBtn.prop('disabled', true).text('กำลังบันทึก...');
+                if (typeof google === 'undefined' || !google.script || !google.script.run) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่สามารถเชื่อมต่อได้',
+                        text: 'ระบบนี้ต้องเปิดใช้งานผ่าน Google Apps Script Web App เท่านั้น',
+                        confirmButtonColor: '#2563eb'
+                    });
+                    return;
+                }
 
                 const formData = {
                     firstname: $('#reg_firstname').val().trim(),
@@ -534,47 +491,35 @@
                     didOpen: () => Swal.showLoading()
                 });
 
-                if (typeof google !== 'undefined' && google.script && google.script.run) {
-                    google.script.run
-                        .withSuccessHandler(function(response) {
-                            $submitBtn.prop('disabled', false).text('ยืนยันสมัครสมาชิก');
-                            if (response && response.success) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'ลงทะเบียนสำเร็จ!',
-                                    text: response.message,
-                                    confirmButtonColor: '#2563eb'
-                                }).then(() => {
-                                    closeModal();
-                                });
-                            } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'เกิดข้อผิดพลาด',
-                                    text: response ? response.message : 'ไม่สามารถลงทะเบียนได้',
-                                    confirmButtonColor: '#2563eb'
-                                });
-                            }
-                        })
-                        .withFailureHandler(function(error) {
-                            $submitBtn.prop('disabled', false).text('ยืนยันสมัครสมาชิก');
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response && response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'ลงทะเบียนสำเร็จ!',
+                                text: response.message,
+                                confirmButtonColor: '#2563eb'
+                            }).then(() => {
+                                closeModal();
+                            });
+                        } else {
                             Swal.fire({
                                 icon: 'error',
-                                title: 'เกิดข้อผิดพลาดระบบ',
-                                text: error.message || error,
+                                title: 'เกิดข้อผิดพลาด',
+                                text: response ? response.message : 'ไม่สามารถลงทะเบียนได้',
                                 confirmButtonColor: '#2563eb'
                             });
-                        })
-                        .registerUser(formData);
-                } else {
-                    $submitBtn.prop('disabled', false).text('ยืนยันสมัครสมาชิก');
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'โหมดทดสอบ (Demo Mode)',
-                        text: 'ระบบกำลังทำงานในโหมดทดสอบภายนอก Google Apps Script',
-                        confirmButtonColor: '#2563eb'
-                    }).then(() => closeModal());
-                }
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาดระบบ',
+                            text: error.message,
+                            confirmButtonColor: '#2563eb'
+                        });
+                    })
+                    .registerUser(formData);
             });
         });
     </script>
