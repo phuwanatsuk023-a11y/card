@@ -16,7 +16,7 @@
         }
         
         .bg-custom-image {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.75)), url('Image.png');
+            background-image: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.75)), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
         }
@@ -52,8 +52,8 @@
         }
     </style>
 </head>
-<body class="h-full bg-slate-900 bg-custom-image min-h-screen flex items-center justify-center">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+<body id="appBody" class="h-full bg-slate-900 bg-custom-image min-h-screen flex items-center justify-center">
+    <div id="mainContainer" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             
             <!-- ฝั่งซ้าย: ข้อความต้อนรับและรายละเอียดระบบ -->
@@ -80,36 +80,23 @@
                         <p class="text-xs text-gray-500 mb-4">กรุณาใช้บัญชีผู้ใช้งานเพื่อเข้าสู่การจัดการข้อมูล</p>
                     </div>
 
-                    <?php if ($error_message): ?>
-                        <div class='p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-300' role='alert'>
-                            <?= htmlspecialchars($error_message) ?>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <?php if ($message): ?>
-                        <div class='p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg border border-green-300' role='alert'>
-                            <?= htmlspecialchars($message) ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <form method="POST" action="" class="space-y-4">
+                    <form id="loginForm" class="space-y-4">
                         <div>
                             <label for="username" class="block text-sm font-medium text-gray-700">ชื่อผู้ใช้ (Username)</label>
                             <input type="text" id="username" name="username" required 
-                                   value="<?= htmlspecialchars($username) ?>"
                                    class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-gray-800"
-                                   placeholder="">
+                                   placeholder="พิมพ์ชื่อผู้ใช้">
                         </div>
 
                         <div>
                             <label for="password" class="block text-sm font-medium text-gray-700">รหัสผ่าน (Password)</label>
                             <input type="password" id="password" name="password" required 
                                    class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-gray-800"
-                                   placeholder="">
+                                   placeholder="พิมพ์รหัสผ่าน">
                         </div>
 
                         <div class="pt-2">
-                            <button type="submit" 
+                            <button type="submit" id="loginBtn"
                                     class="btn-primary w-full flex justify-center py-3 px-4 border border-transparent 
                                            rounded-xl shadow-sm text-lg font-semibold text-white 
                                            focus:outline-none focus:ring-2 focus:ring-offset-2 
@@ -120,7 +107,7 @@
                     </form>
                     
                     <p class="mt-6 text-center text-xs text-gray-500">
-                        หากพบปัญหาในการเข้าสู่ระบบ <a href="#" id="openQrModal" class="text-blue-600 hover:text-blue-800 hover:underline font-medium transition duration-150">กรุณาติดต่อผู้ดูแลระบบ</a>
+                        หากพบปัญหาในการเข้าสู่ระบบ <a href="#" onclick="Swal.fire('ติดต่อผู้ดูแลระบบ','กรุณาติดต่อเจ้าหน้าที่สารสนเทศ หรือ โทร 02-XXX-XXXX','info')" class="text-blue-600 hover:text-blue-800 hover:underline font-medium transition duration-150">กรุณาติดต่อผู้ดูแลระบบ</a>
                     </p>
                    
                     <p class="mt-4 text-center text-sm text-gray-600">
@@ -148,22 +135,21 @@
 
             <!-- Modal Body -->
             <div class="p-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-                <form id="registerForm" enctype="multipart/form-data" class="space-y-4">
-                    <input type="hidden" name="action" value="register">
+                <form id="registerForm" class="space-y-4">
                     
-                    <!-- ส่วนแสดงตัวอย่างรูปภาพ (Image Preview) สไตล์ edit_profile -->
+                    <!-- ส่วนแสดงตัวอย่างรูปภาพ (Image Preview) -->
                     <div class="flex flex-col sm:flex-row items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
                         <div class="shrink-0">
                             <img id="profileImagePreview" src="https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128" alt="ตัวอย่างรูปโปรไฟล์" class="w-20 h-20 rounded-full object-cover border-2 border-blue-100 shadow-sm">
                         </div>
                         <div class="flex-1 space-y-1 w-full text-center sm:text-left">
                             <label class="block text-xs font-semibold text-gray-700">รูปโปรไฟล์ (JPG, PNG, WEBP / Max 2MB)</label>
-                            <input type="file" id="profile_image_input" name="profile_image" accept="image/jpeg,image/png,image/webp" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                            <input type="file" id="profile_image_input" accept="image/jpeg,image/png,image/webp" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
                             <p id="profileImageName" class="text-[11px] text-gray-400 truncate max-w-[200px]"></p>
                         </div>
                     </div>
 
-                    <hr class="border-gray-200 my-2"> <!-- ขีดเส้นสีเทา -->
+                    <hr class="border-gray-200 my-2">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -212,38 +198,31 @@
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
                             <input type="text" name="username" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="ชื่อผู้ใช้สำหรับเข้าสู่ระบบ">
                         </div>
-                        
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-						<div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1">Password (ต้องมีความยาวอย่างน้อย 8 ตัวอักษร) <span class="text-red-500">*</span></label>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Password (อย่างน้อย 8 ตัวอักษร) <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input type="password" name="password" id="reg_password" required class="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="พิมพ์ใหญ่, เล็ก, ตัวเลข">
+                                <input type="password" name="password" id="reg_password" minlength="8" required class="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <button type="button" id="toggleRegPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
-                                    <svg id="eyeIconReg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
+                                    👁️
                                 </button>
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input type="password" name="confirm_password" id="confirm_password" required class="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="ยืนยันรหัสผ่านอีกครั้ง">
+                                <input type="password" name="confirm_password" id="confirm_password" minlength="8" required class="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
-                                    <svg id="eyeIconConfirm" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
+                                    👁️
                                 </button>
                             </div>
                         </div>
-                        
-					</div>
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-					<div class="pt-2 md:pt-5">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                        <div class="pt-2 md:pt-5">
                             <label class="flex items-center cursor-pointer">
                                 <input type="checkbox" name="terms" required class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <span class="ml-2 text-xs text-gray-700 font-medium">ยอมรับเงื่อนไขการใช้งานระบบ <span class="text-red-500">*</span></span>
@@ -253,11 +232,173 @@
 
                     <!-- Modal Footer Buttons -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
-                        
                         <button type="submit" id="submitRegisterBtn" class="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">ยืนยันสมัครสมาชิก</button>
-						<button type="button" id="cancelModalBtn" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition">ยกเลิก</button>
+                        <button type="button" id="cancelModalBtn" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition">ยกเลิก</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <!-- JavaScript Logic สำหรับการทำงานกับ Google Apps Script -->
+    <script>
+        let base64ImageString = ""; // ตัวแปรเก็บรูปภาพในรูปแบบ Base64
+
+        $(document.body).ready(function() {
+            
+            // --- 1. ควบคุม Modal เปิด-ปิด ---
+            $('#openRegisterModal').click(function(e) {
+                e.preventDefault();
+                $('#registerModal').removeClass('hidden');
+                setTimeout(() => {
+                    $('#modalContainer').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+                }, 10);
+            });
+
+            function closeModal() {
+                $('#modalContainer').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+                setTimeout(() => {
+                    $('#registerModal').addClass('hidden');
+                    $('#registerForm')[0].reset();
+                    $('#profileImagePreview').attr('src', 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128');
+                    base64ImageString = "";
+                }, 300);
+            }
+
+            $('#closeModalBtn, #cancelModalBtn').click(closeModal);
+
+            // --- 2. เปิด-ปิด การมองเห็น Password ---
+            $('#toggleRegPassword').click(function() {
+                const input = $('#reg_password');
+                input.attr('type', input.attr('type') === 'password' ? 'text' : 'password');
+            });
+
+            $('#toggleConfirmPassword').click(function() {
+                const input = $('#confirm_password');
+                input.attr('type', input.attr('type') === 'password' ? 'text' : 'password');
+            });
+
+            // --- 3. แปลงไฟล์รูปภาพเป็น Base64 & Preview ---
+            $('#profile_image_input').change(function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 2 * 1024 * 1024) { // จำกัดขนาดไม่เกิน 2MB
+                        Swal.fire('แจ้งเตือน', 'ขนาดไฟล์รูปภาพต้องไม่เกิน 2MB', 'warning');
+                        $(this).val('');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        base64ImageString = e.target.result;
+                        $('#profileImagePreview').attr('src', base64ImageString);
+                    };
+                    reader.readAsDataURL(file);
+                    $('#profileImageName').text(file.name);
+                }
+            });
+
+            // --- 4. จัดการการ Submit ฟอร์มลงทะเบียน ---
+            $('#registerForm').submit(function(e) {
+                e.preventDefault();
+
+                const pass = $('#reg_password').val();
+                const confirmPass = $('#confirm_password').val();
+
+                if (pass !== confirmPass) {
+                    Swal.fire('รหัสผ่านไม่ตรงกัน', 'กรุณาตรวจสอบรหัสผ่านและยืนยันรหัสผ่านอีกครั้ง', 'error');
+                    return;
+                }
+
+                // ดึงข้อมูลจากฟอร์ม
+                const formData = {
+                    firstname: $('input[name="firstname"]').val(),
+                    lastname: $('input[name="lastname"]').val(),
+                    position: $('input[name="position"]').val(),
+                    organization: $('input[name="organization"]').val(),
+                    phone: $('input[name="phone"]').val(),
+                    email: $('input[name="email"]').val(),
+                    line_id: $('input[name="line_id"]').val(),
+                    username: $('input[name="username"]').val(),
+                    password: pass,
+                    profile_image_base64: base64ImageString
+                };
+
+                Swal.fire({
+                    title: 'กำลังบันทึกข้อมูล...',
+                    text: 'กรุณารอสักครู่ ระบบกำลังอัปโหลดรูปและสร้างบัญชี',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                // ส่งข้อมูลไปที่ Code.gs
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response.success) {
+                            Swal.fire('สำเร็จ!', response.message, 'success').then(() => {
+                                closeModal();
+                            });
+                        } else {
+                            Swal.fire('เกิดข้อผิดพลาด', response.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        Swal.fire('เกิดข้อผิดพลาด', err.toString(), 'error');
+                    })
+                    .registerUser(formData);
+            });
+
+            // --- 5. จัดการการ Login ---
+            $('#loginForm').submit(function(e) {
+                e.preventDefault();
+
+                const username = $('#username').val();
+                const password = $('#password').val();
+
+                Swal.fire({
+                    title: 'กำลังตรวจสอบ...',
+                    text: 'กรุณารอสักครู่',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'เข้าสู่ระบบสำเร็จ!',
+                                text: 'ยินดีต้อนรับ คุณ ' + response.user.firstname,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // บันทึกข้อมูลผู้ใช้ไว้ใน Session Storage
+                                sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+                                
+                                // โหลดเนื้อหา list.html มาแสดงผลในหน้าเดิม
+                                loadListPage();
+                            });
+                        } else {
+                            Swal.fire('เข้าสู่ระบบไม่สำเร็จ', response.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        Swal.fire('เกิดข้อผิดพลาด', err.toString(), 'error');
+                    })
+                    .checkLogin(username, password);
+            });
+
+            // ฟังก์ชันสำหรับเปลี่ยนหน้าเป็น list.html Dynamic
+            function loadListPage() {
+                google.script.run
+                    .withSuccessHandler(function(htmlContent) {
+                        // เปลี่ยนคลาสของ Body และเปลี่ยนเนื้อหาทั้งหมด
+                        $('#appBody').removeClass('bg-slate-900 bg-custom-image flex items-center justify-center').addClass('bg-gray-100');
+                        $('#appBody').html(htmlContent);
+                    })
+                    .loadListPageContent();
+            }
+        });
+    </script>
+</body>
+</html>
