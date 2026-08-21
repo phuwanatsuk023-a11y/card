@@ -36,21 +36,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* CSS เฉพาะส่วนของการพิมพ์ (Print Media) */
         @media print {
             body { background: white; margin: 0; padding: 0; }
-            /* ซ่อน UI ทั้งหมดที่ไม่เกี่ยวกับการพิมพ์ */
             #sidebar, #topbar, .no-print { display: none !important; }
             #app-container { margin: 0 !important; padding: 0 !important; width: 100% !important; display: block !important; }
-            
-            /* แสดงเฉพาะพื้นที่พิมพ์ */
             #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
-            
-            /* ตั้งค่าขนาดการ์ดสำหรับหน้ากระดาษ A4 (บัตรขนาดมาตรฐาน ~8.6x5.4 cm) */
-            /* Template มีสัดส่วน 2048x828 (แนวนอนยาว) ดังนั้นเราจำลองความกว้าง 2 เท่าของบัตร (17.2cm) */
             .print-card-wrapper {
-                width: 172mm !important; /* กว้างพอๆ กับ 2 บัตรติดกัน */
-                height: 69.5mm !important; /* อัตราส่วนตามภาพต้นฉบับ 2048/828 */
+                width: 172mm !important; 
+                height: 69.5mm !important; 
                 page-break-inside: avoid;
                 margin-bottom: 10mm;
                 position: relative;
@@ -62,11 +55,10 @@
             }
         }
 
-        /* Styling สำหรับ Template Editor (เปอร์เซ็นต์) */
         .card-preview-container {
             position: relative;
             width: 100%;
-            max-width: 900px; /* จำกัดความกว้างบนหน้าจอ */
+            max-width: 900px; 
             aspect-ratio: 2048 / 828;
             background-color: white;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -80,7 +72,6 @@
             z-index: 10;
             color: #000;
             white-space: nowrap;
-            /* text-shadow: 0px 0px 2px white; เพื่อให้อ่านง่ายบนลายน้ำ */
         }
         .overlay-photo {
             position: absolute;
@@ -88,7 +79,6 @@
             background-color: #e2e8f0;
             background-size: cover;
             background-position: center;
-            border: 1px dashed #94a3b8;
         }
         .overlay-qr {
             position: absolute;
@@ -97,7 +87,6 @@
             padding: 2px;
         }
         
-        /* สไตล์ตารางซ่อน Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -106,14 +95,13 @@
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
 
-    <!-- Topbar -->
     <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
         <div class="px-6 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-building-columns text-gov-gold text-2xl"></i>
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">ระบบจัดทำและพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
-                    <p class="text-xs text-gray-300" id="header-org-name">องค์กรปกครองส่วนท้องถิ่น</p>
+                    <p class="text-xs text-gray-300" id="header-org-name">กระทรวงนวัตกรรมและเทคโนโลยี (Demo)</p>
                 </div>
             </div>
             <div class="flex items-center gap-4">
@@ -131,10 +119,8 @@
         </div>
     </header>
 
-    <!-- Main App Container -->
     <div id="app-container" class="flex flex-1 overflow-hidden">
         
-        <!-- Sidebar -->
         <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
             <nav class="flex-1 py-4 flex flex-col gap-1">
                 <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
@@ -143,7 +129,7 @@
                 <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลเจ้าหน้าที่</span>
                 </a>
-                <a href="#" onclick="nav('form')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="openAddForm()" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-user-plus w-5"></i> <span>เพิ่มข้อมูลใหม่</span>
                 </a>
                 <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
@@ -163,15 +149,13 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <main id="content" class="flex-1 bg-gray-50 overflow-y-auto p-6 relative">
             
-            <!-- SECTION: Dashboard -->
             <section id="sec-dashboard" class="view-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ภาพรวมระบบ (Dashboard)</h2>
                     <div class="flex gap-2">
-                        <button onclick="nav('form')" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
+                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
                             <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
                         </button>
                     </div>
@@ -217,12 +201,11 @@
                 </div>
             </section>
 
-            <!-- SECTION: Employee List -->
             <section id="sec-employees" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ข้อมูลเจ้าหน้าที่</h2>
                     <div class="flex gap-2">
-                        <button onclick="nav('form')" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
+                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
                         <button onclick="prepareBatchPrint()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-print"></i> พิมพ์รายการที่เลือก</button>
                     </div>
                 </div>
@@ -248,14 +231,12 @@
                                 </tr>
                             </thead>
                             <tbody id="emp-table-body" class="text-sm">
-                                <!-- Data will be populated here -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION: Add / Edit Form -->
             <section id="sec-form" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy" id="form-title">เพิ่มข้อมูลเจ้าหน้าที่</h2>
@@ -266,7 +247,6 @@
                     <form id="emp-form" onsubmit="saveEmployee(event)">
                         <input type="hidden" id="f_id">
                         
-                        <!-- Upload Photo Area -->
                         <div class="mb-8 border-b pb-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-gold pl-2">รูปถ่ายสำหรับติดบัตร</h3>
                             <div class="flex items-start gap-6">
@@ -290,7 +270,6 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            <!-- Column 1 -->
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลส่วนบุคคล</h3>
                                 <div class="space-y-4">
@@ -303,7 +282,6 @@
                                 </div>
                             </div>
 
-                            <!-- Column 2 -->
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลการทำงาน</h3>
                                 <div class="space-y-4">
@@ -316,7 +294,6 @@
                                 </div>
                             </div>
 
-                            <!-- Column 3 (Full width) -->
                             <div class="col-span-1 md:col-span-2 pt-4 border-t">
                                 <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-green-500 pl-2">ข้อมูลเฉพาะของบัตร</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -335,7 +312,6 @@
                 </div>
             </section>
 
-            <!-- SECTION: Template Settings -->
             <section id="sec-template-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
@@ -343,27 +319,20 @@
                 </div>
                 
                 <div class="flex flex-col lg:flex-row gap-6">
-                    <!-- Config Panel -->
                     <div class="w-full lg:w-1/3 bg-white p-4 rounded-lg shadow-sm border overflow-y-auto max-h-[70vh]">
                         <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-circle-info"></i> ปรับแต่งตำแหน่งและขนาด (อ้างอิงเป็นเปอร์เซ็นต์ % ของความกว้างบัตรรวมหน้า-หลัง)</p>
-                        
-                        <div class="space-y-4" id="config-panel">
-                            <!-- JS will populate these inputs -->
-                        </div>
+                        <div class="space-y-4" id="config-panel"></div>
                     </div>
-                    <!-- Live Preview -->
                     <div class="w-full lg:w-2/3">
                         <div class="bg-white p-4 rounded-lg shadow-sm border flex justify-center items-center bg-gray-100 overflow-x-auto">
                             <div class="card-preview-container" id="editor-preview-board">
                                 <img src="card_template.png" class="card-bg" alt="Template" onerror="this.src='https://placehold.co/2048x828/fff/ccc?text=MISSING+card_template.png'">
-                                <!-- Dynamic elements applied via JS render function -->
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION: Print Preview / View Card -->
             <section id="sec-print-preview" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6 no-print">
                     <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
@@ -374,11 +343,9 @@
                 </div>
 
                 <div class="bg-gray-200 p-8 rounded-lg shadow-inner flex flex-col items-center gap-6 overflow-y-auto no-print" id="print-preview-container">
-                    <!-- JS will generate .card-preview-container here -->
                 </div>
             </section>
 
-            <!-- SECTION: System Settings (GAS Integration) -->
             <section id="sec-system-settings" class="view-section hidden">
                 <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
                     <h2 class="text-xl font-bold text-gov-navy mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
@@ -395,12 +362,8 @@
         </main>
     </div>
 
-    <!-- Print Render Area (Hidden on screen, shown on Print) -->
-    <div id="print-section" class="hidden">
-        <!-- Rendered Print Cards will go here -->
-    </div>
+    <div id="print-section" class="hidden"></div>
 
-    <!-- Image Crop Modal -->
     <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg p-4 w-full max-w-lg">
             <h3 class="text-lg font-bold mb-4">ปรับแต่งรูปภาพ (อัตราส่วน 3:4)</h3>
@@ -414,37 +377,31 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
         Message
     </div>
 
-    <!-- SCRIPT APPLICATION LOGIC -->
     <script>
-        // ==========================================
-        // 1. STATE & INITIALIZATION
-        // ==========================================
         let GAS_URL = localStorage.getItem('GAS_URL') || '';
         let USE_LOCAL = GAS_URL === '';
         
-        let db = { employees: [] }; // Mock Local DB
+        let db = { employees: [] }; 
         if(USE_LOCAL && !localStorage.getItem('gov_db')) {
-            // Seed Mock Data
             localStorage.setItem('gov_db', JSON.stringify([{
                 ID: '1', CitizenID: '1-2345-67890-12-3', EmployeeID: 'EMP001', CardNumber: 'C001/2569', Prefix: 'นาย', FirstName: 'สมชาย', LastName: 'ใจดี', Position: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', Department: 'สำนักเทคโนโลยีสารสนเทศ', PhotoURL: 'https://placehold.co/300x400/1d4ed8/fff?text=Photo', IssueDate: '2026-08-01', ExpireDate: '2031-07-31', Status: 'พร้อมพิมพ์'
             }]));
         }
 
-        // Default Template Config (Percentages based on 2048x828 template)
+        // ปรับ Config เริ่มต้นให้ตรงกับภาพ card_template.png
         let tplConfig = {
-            photoX: 2.5, photoY: 19.5, photoW: 11.2, photoH: 35,
-            citizenIdX: 23, citizenIdY: 22, citizenIdSize: 1.5,
-            nameX: 19.5, nameY: 38, nameSize: 1.6,
-            positionX: 19.5, positionY: 48.5, positionSize: 1.4,
-            cardNumX: 74, cardNumY: 64.5, cardNumSize: 1.4,
-            issueDateX: 58, issueDateY: 82, dateSize: 1.2,
-            expireDateX: 84, expireDateY: 82,
-            qrX: 72, qrY: 26.5, qrSize: 9
+            photoX: 1.1, photoY: 16.5, photoW: 13, photoH: 38,
+            citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
+            nameX: 17, nameY: 34, nameSize: 1.6,
+            positionX: 17, positionY: 43, positionSize: 1.4,
+            cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
+            issueDateX: 62, issueDateY: 78, dateSize: 1.2,
+            expireDateX: 85, expireDateY: 78,
+            qrX: 85, qrY: 20, qrSize: 9
         };
 
         if(localStorage.getItem('gov_tpl_config')) {
@@ -454,7 +411,6 @@
         let currentPrintList = [];
         let cropper = null;
 
-        // Init App
         window.onload = () => {
             document.getElementById('set_gas_url').value = GAS_URL;
             updateConnectionStatus();
@@ -474,9 +430,6 @@
             }
         }
 
-        // ==========================================
-        // 2. NAVIGATION & UI
-        // ==========================================
         function nav(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.menu-btn').forEach(el => {
@@ -499,13 +452,18 @@
             if (viewId === 'dashboard') updateDashboard();
             if (viewId === 'employees') renderEmployeeTable();
             if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
-            if (viewId === 'form' && !document.getElementById('f_id').value) {
-                document.getElementById('emp-form').reset();
-                document.getElementById('f_photo_preview').src = '';
-                document.getElementById('f_photo_preview').classList.add('hidden');
-                document.getElementById('f_photo_placeholder').classList.remove('hidden');
-                document.getElementById('form-title').innerText = 'เพิ่มข้อมูลเจ้าหน้าที่';
-            }
+        }
+
+        // เพิ่มฟังก์ชันสำหรับเคลียร์ค่าในฟอร์มเมื่อกด "เพิ่มข้อมูลใหม่" ป้องกันการทับข้อมูลเดิม
+        function openAddForm() {
+            document.getElementById('f_id').value = '';
+            document.getElementById('emp-form').reset();
+            document.getElementById('f_photo_preview').src = '';
+            document.getElementById('f_photo_preview').classList.add('hidden');
+            document.getElementById('f_photo_placeholder').classList.remove('hidden');
+            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลเจ้าหน้าที่';
+            document.getElementById('f_photoURL').value = '';
+            nav('form');
         }
 
         function showToast(msg, type='info') {
@@ -518,9 +476,6 @@
             }, 3000);
         }
 
-        // ==========================================
-        // 3. DATA API (Local / GAS Toggle)
-        // ==========================================
         function fetchAPI(action, payload=null) {
             return new Promise((resolve, reject) => {
                 if(USE_LOCAL) {
@@ -530,7 +485,10 @@
                         else if (action === 'saveEmployee') {
                             if(payload.ID) {
                                 let idx = localData.findIndex(x=>x.ID === payload.ID);
-                                if(idx>-1) localData[idx] = payload;
+                                if(idx>-1) {
+                                    // แก้ไขบัค: รวมข้อมูลใหม่กับข้อมูลเดิม เพื่อไม่ให้ Status หายไป
+                                    localData[idx] = { ...localData[idx], ...payload };
+                                }
                             } else {
                                 payload.ID = Date.now().toString();
                                 payload.Status = 'รอจัดทำ';
@@ -549,19 +507,14 @@
                         }
                     }, 200);
                 } else {
-                    // Call Google Apps Script
-                    // เปลี่ยนจากเดิมเป็นแบบนี้
-fetch(GAS_URL, {
-    method: 'POST',
-    // ต้องบังคับ Header เป็น text/plain เพื่อเลี่ยงการตรวจ CORS Preflight ของเบราว์เซอร์
-    headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-    },
-    body: JSON.stringify({ action: action, payload: payload })
-})
-.then(res => res.json())
-.then(resolve)
-.catch(reject);
+                    fetch(GAS_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: action, payload: payload })
+                    })
+                    .then(res => res.json())
+                    .then(resolve)
+                    .catch(reject);
                 }
             });
         }
@@ -587,15 +540,11 @@ fetch(GAS_URL, {
             setTimeout(()=>location.reload(), 1000);
         }
 
-        // ==========================================
-        // 4. BUSINESS LOGIC (CRUD)
-        // ==========================================
         function updateDashboard() {
             document.getElementById('stat-total').innerText = db.employees.length;
             document.getElementById('stat-pending').innerText = db.employees.filter(e => e.Status === 'รอจัดทำ' || e.Status === 'พร้อมพิมพ์').length;
             document.getElementById('stat-printed').innerText = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
             
-            // Check Expired (Dummy logic for now)
             let exp = 0;
             const now = new Date();
             db.employees.forEach(e => {
@@ -686,7 +635,6 @@ fetch(GAS_URL, {
             document.getElementById('f_department').value = emp.Department || '';
             document.getElementById('f_cardNum').value = emp.CardNumber || '';
             
-            // Format Date for input type=date
             const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
             document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
             document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
@@ -701,9 +649,6 @@ fetch(GAS_URL, {
             nav('form');
         }
 
-        // ==========================================
-        // 5. PHOTO UPLOAD & CROP (Cropper.js)
-        // ==========================================
         function handlePhotoUpload(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -715,7 +660,7 @@ fetch(GAS_URL, {
                 
                 if(cropper) cropper.destroy();
                 cropper = new Cropper(document.getElementById('crop-image-target'), {
-                    aspectRatio: 3 / 4, // สัดส่วนรูปติดบัตรทั่วไป
+                    aspectRatio: 3 / 4,
                     viewMode: 1
                 });
             };
@@ -744,16 +689,13 @@ fetch(GAS_URL, {
                 showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
                 fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
                     if(res.status==='success') {
-                        document.getElementById('f_photoURL').value = res.data; // Gets Google Drive URL
+                        document.getElementById('f_photoURL').value = res.data;
                         showToast('อัปโหลดสำเร็จ', 'success');
                     }
                 });
             }
         }
 
-        // ==========================================
-        // 6. TEMPLATE ENGINE (OVERLAY SYSTEM)
-        // ==========================================
         function getMockEmp() {
             return {
                 PhotoURL: 'https://placehold.co/300x400/ccc/666?text=Photo',
@@ -803,7 +745,6 @@ fetch(GAS_URL, {
             if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
         }
 
-        // หัวใจหลัก: ฟังก์ชันสร้าง HTML overlay บนรูป Template
         function renderPreviewBoard(emp, targetContainerId) {
             const container = document.getElementById(targetContainerId);
             if(!container) return;
@@ -815,16 +756,10 @@ fetch(GAS_URL, {
                 return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
             };
 
-            // สร้าง HTML ภายใน container ที่มี aspect-ratio 2048/828
             let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
             
-            // 1. รูปถ่าย
             html += `<div class="overlay-photo" style="left:${tplConfig.photoX}%; top:${tplConfig.photoY}%; width:${tplConfig.photoW}%; height:${tplConfig.photoH}%; background-image: url('${emp.PhotoURL}');"></div>`;
             
-            // 2. ข้อมูลส่วนบุคคล (ด้านหน้า)
-            // Font size ใช้หน่วย vw เมื่อยู่ในหน้าจอปกติ แต่ใน print media จะถูก map ใหม่ ให้ใช้ em หรือ % จะดีกว่า
-            // เพื่อให้แม่นยำที่สุดเมื่อยืดหด (aspect-ratio) ให้ใช้ % ของความกว้าง container
-            // ตัวอย่าง: size: 1.5 หมายถึง 1.5% ของความกว้างทั้งหมด (2048) = ประมาณ 30px
             const createTxt = (id, text, x, y, size, fw='normal') => {
                 return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw};">${text}</div>`;
             };
@@ -833,19 +768,14 @@ fetch(GAS_URL, {
             html += createTxt('name', `${emp.Prefix||''}${emp.FirstName||''}  ${emp.LastName||''}`, tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, 'bold');
             html += createTxt('position', emp.Position||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize);
             
-            // 3. ข้อมูลบัตร (ด้านหลัง)
             html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
             html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize);
             html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY, tplConfig.dateSize);
 
-            // 4. QR Code Container (จะ generate ผ่าน QRCode.js ทีหลัง)
             html += `<div id="${targetContainerId}_qr" class="overlay-qr" style="left:${tplConfig.qrX}%; top:${tplConfig.qrY}%; width:${tplConfig.qrSize}%; aspect-ratio: 1/1;"></div>`;
 
-            // Wrap contents inside a div that defines --card-width so font-size: calc() works reliably
-            // ใช้ ResizeObserver แบบ inline CSS hack: 
             container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
 
-            // สร้าง QR Code (ดีเลย์นิดหน่อยให้ DOM สร้างเสร็จ)
             setTimeout(() => {
                 const qrEl = document.getElementById(`${targetContainerId}_qr`);
                 if(qrEl) {
@@ -862,9 +792,6 @@ fetch(GAS_URL, {
             }, 50);
         }
 
-        // ==========================================
-        // 7. PRINTING SYSTEM
-        // ==========================================
         function prepareBatchPrint() {
             const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
             if(checked.length === 0) {
@@ -883,7 +810,6 @@ fetch(GAS_URL, {
                 const emp = db.employees.find(x => x.ID === id);
                 if(!emp) return;
                 
-                // ตรวจสอบข้อมูลบังคับก่อนพิมพ์
                 if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
                     showToast(`ข้อมูลของ ${emp.FirstName} ไม่ครบถ้วน (ต้องมีรูป/เลขบัตร)`, 'error');
                     return;
@@ -891,7 +817,6 @@ fetch(GAS_URL, {
 
                 currentPrintList.push(emp);
                 
-                // สร้างกล่อง Preview สำหรับแสดงผลบนหน้าจอ
                 const cardDiv = document.createElement('div');
                 const uuid = 'prev_' + Math.random().toString(36).substring(7);
                 cardDiv.id = uuid;
@@ -909,7 +834,6 @@ fetch(GAS_URL, {
         function executePrint() {
             if(currentPrintList.length === 0) return;
 
-            // นำ Card Preview ไปใส่ใน #print-section (ซึ่งจะถูกโชว์ตอน @media print)
             const printSection = document.getElementById('print-section');
             printSection.innerHTML = '';
 
@@ -917,22 +841,20 @@ fetch(GAS_URL, {
                 const cardDiv = document.createElement('div');
                 const uuid = 'print_' + Math.random().toString(36).substring(7);
                 cardDiv.id = uuid;
-                cardDiv.className = 'print-card-wrapper'; // Class ที่ถูกสั่งงานด้วย @media print
+                cardDiv.className = 'print-card-wrapper';
                 printSection.appendChild(cardDiv);
                 
                 renderPreviewBoard(emp, uuid);
             });
 
-            // รอ QR Code render เสร็จใน Print Section ก่อนสั่งพิมพ์
             setTimeout(() => {
                 window.print();
                 
-                // หลังพิมพ์เสร็จ (สมมติว่าพิมพ์สำเร็จ) -> บันทึกประวัติ
                 if(confirm('การพิมพ์เสร็จสิ้นและสมบูรณ์หรือไม่? (กด OK เพื่อบันทึกประวัติการพิมพ์)')) {
                     const printPayload = currentPrintList.map(e => ({ EmployeeID: e.ID, CardNumber: e.CardNumber, EmployeeName: `${e.FirstName} ${e.LastName}` }));
                     fetchAPI('recordPrint', printPayload).then(() => {
                         showToast('บันทึกประวัติการพิมพ์สำเร็จ', 'success');
-                        loadEmployees(); // Update Status
+                        loadEmployees(); 
                     });
                 }
             }, 500);
