@@ -896,7 +896,40 @@ function editEmployee(id) {
     
     nav('form');
 }
+      function previewCard(empIds) {
+    if (!db.employees || db.employees.length === 0) {
+        showToast('ยังไม่มีข้อมูลในระบบ', 'error');
+        return;
+    }
+    
+    currentPrintList = [];
+    const printPreviewContainer = document.getElementById('print-preview-container');
+    printPreviewContainer.innerHTML = '';
+
+    empIds.forEach((id) => {
+        const emp = db.employees.find(x => String(x.ID) === String(id));
+        if(!emp) return;
         
+        if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
+            showToast(`ข้อมูลของ ${emp.FirstName || id} ไม่ครบถ้วน (ต้องมีรูป, เลขที่บัตร และชื่อ)`, 'error');
+            return;
+        }
+
+        currentPrintList.push(emp);
+        
+        const cardDiv = document.createElement('div');
+        const uuid = 'prev_' + Math.random().toString(36).substring(7);
+        cardDiv.id = uuid;
+        cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
+        printPreviewContainer.appendChild(cardDiv);
+        
+        renderPreviewBoard(emp, uuid);
+    });
+
+    if(currentPrintList.length > 0) {
+        nav('print-preview');
+    }
+}  
 
     </script>
 </body>
