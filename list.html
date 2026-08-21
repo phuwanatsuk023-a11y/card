@@ -669,7 +669,7 @@
             }
 
             if(agencySettings.agency_name) {
-                const prov = agencySettings.province ? ` (${agencySettings.province})` : '';
+                const prov = agencySettings.province ? ` ${agencySettings.province}` : '';
                 document.getElementById('header-org-name').innerText = `${agencySettings.agency_name}${prov}`;
             }
         }
