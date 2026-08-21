@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดทำและพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ (GovCard Pro)</title>
+    
+    <!-- Fonts: Noto Sans Thai -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Noto Sans Thai"', 'sans-serif'] },
+                    colors: {
+                        gov: { navy: '#0f172a', blue: '#1d4ed8', gold: '#eab308', light: '#f8fafc' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Icons (FontAwesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Cropper.js for Photo Upload -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        /* CSS เฉพาะส่วนของการพิมพ์ (Print Media) */
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            /* ซ่อน UI ทั้งหมดที่ไม่เกี่ยวกับการพิมพ์ */
+            #sidebar, #topbar, .no-print { display: none !important; }
+            #app-container { margin: 0 !important; padding: 0 !important; width: 100% !important; display: block !important; }
+            
+            /* แสดงเฉพาะพื้นที่พิมพ์ */
+            #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
+            
+            /* ตั้งค่าขนาดการ์ดสำหรับหน้ากระดาษ A4 (บัตรขนาดมาตรฐาน ~8.6x5.4 cm) */
+            /* Template มีสัดส่วน 2048x828 (แนวนอนยาว) ดังนั้นเราจำลองความกว้าง 2 เท่าของบัตร (17.2cm) */
+            .print-card-wrapper {
+                width: 172mm !important; /* กว้างพอๆ กับ 2 บัตรติดกัน */
+                height: 69.5mm !important; /* อัตราส่วนตามภาพต้นฉบับ 2048/828 */
+                page-break-inside: avoid;
+                margin-bottom: 10mm;
+                position: relative;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .print-card-wrapper img.card-bg {
+                width: 100%; height: 100%; object-fit: contain;
+            }
+        }
+
+        /* Styling สำหรับ Template Editor (เปอร์เซ็นต์) */
+        .card-preview-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px; /* จำกัดความกว้างบนหน้าจอ */
+            aspect-ratio: 2048 / 828;
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+        .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        
+        .overlay-item {
+            position: absolute;
+            z-index: 10;
+            color: #000;
+            white-space: nowrap;
+            /* text-shadow: 0px 0px 2px white; เพื่อให้อ่านง่ายบนลายน้ำ */
+        }
+        .overlay-photo {
+            position: absolute;
+            z-index: 10;
+            background-color: #e2e8f0;
+            background-size: cover;
+            background-position: center;
+            border: 1px dashed #94a3b8;
+        }
+        .overlay-qr {
+            position: absolute;
+            z-index: 10;
+            background-color: white;
+            padding: 2px;
+        }
+        
+        /* สไตล์ตารางซ่อน Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
+
+    <!-- Topbar -->
+    <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
+        <div class="px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-building-columns text-gov-gold text-2xl"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">ระบบจัดทำและพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
+                    <p class="text-xs text-gray-300" id="header-org-name">กระทรวงนวัตกรรมและเทคโนโลยี (Demo)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-sm text-right hidden md:block">
+                    <p class="font-semibold">นายผู้ดูแล ระบบ</p>
+                    <p class="text-xs text-gray-300">Administrator</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-gov-blue flex items-center justify-center text-white border-2 border-gov-gold">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ">
+                    <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
+            <nav class="flex-1 py-4 flex flex-col gap-1">
+                <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5"></i> <span>Dashboard</span>
+                </a>
+                <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลเจ้าหน้าที่</span>
+                </a>
+                <a href="#" onclick="nav('form')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-user-plus w-5"></i> <span>เพิ่มข้อมูลใหม่</span>
+                </a>
+                <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>ประวัติการพิมพ์</span>
+                </a>
+                <div class="my-2 border-t border-gray-100"></div>
+                <p class="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ตั้งค่าระบบ</p>
+                <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-id-card-clip w-5"></i> <span>ตั้งค่า Template บัตร</span>
+                </a>
+                <a href="#" onclick="nav('system-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-gears w-5"></i> <span>ตั้งค่าการเชื่อมต่อ (GAS)</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-400">
+                GovCard Pro v1.0<br>Status: <span id="conn-status" class="text-green-500 font-bold">Local Storage</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="content" class="flex-1 bg-gray-50 overflow-y-auto p-6 relative">
+            
+            <!-- SECTION: Dashboard -->
+            <section id="sec-dashboard" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gov-navy">ภาพรวมระบบ (Dashboard)</h2>
+                    <div class="flex gap-2">
+                        <button onclick="nav('form')" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
+                            <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-blue-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">เจ้าหน้าที่ทั้งหมด</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-total">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-yellow-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">รอจัดทำ / พร้อมพิมพ์</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-pending">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-clock"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-green-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">พิมพ์แล้ว</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-printed">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-print"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-red-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">บัตรหมดอายุ</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-expired">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-id-card-clip"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Employee List -->
+            <section id="sec-employees" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gov-navy">ข้อมูลเจ้าหน้าที่</h2>
+                    <div class="flex gap-2">
+                        <button onclick="nav('form')" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
+                        <button onclick="prepareBatchPrint()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-print"></i> พิมพ์รายการที่เลือก</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="p-4 border-b border-gray-200 flex gap-4 bg-gray-50 rounded-t-lg">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวเจ้าหน้าที่ หรือเลขที่บัตร..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-gov-blue focus:ring-1 focus:ring-gov-blue">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-sm border-b">
+                                    <th class="p-3 w-10 text-center"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                                    <th class="p-3">รูปถ่าย</th>
+                                    <th class="p-3">เลขที่บัตร</th>
+                                    <th class="p-3">ชื่อ - นามสกุล</th>
+                                    <th class="p-3">ตำแหน่ง / หน่วยงาน</th>
+                                    <th class="p-3 text-center">สถานะ</th>
+                                    <th class="p-3 text-center w-40">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emp-table-body" class="text-sm">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Add / Edit Form -->
+            <section id="sec-form" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gov-navy" id="form-title">เพิ่มข้อมูลเจ้าหน้าที่</h2>
+                    <button onclick="nav('employees')" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-arrow-left"></i> กลับหน้ารายการ</button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <form id="emp-form" onsubmit="saveEmployee(event)">
+                        <input type="hidden" id="f_id">
+                        
+                        <!-- Upload Photo Area -->
+                        <div class="mb-8 border-b pb-6">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-gold pl-2">รูปถ่ายสำหรับติดบัตร</h3>
+                            <div class="flex items-start gap-6">
+                                <div class="w-32 h-40 bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative group cursor-pointer overflow-hidden">
+                                    <img id="f_photo_preview" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+                                    <div class="text-center text-gray-400 group-hover:text-gov-blue p-2" id="f_photo_placeholder">
+                                        <i class="fa-solid fa-camera text-2xl mb-1"></i><br><span class="text-xs">อัปโหลดรูป</span>
+                                    </div>
+                                    <input type="file" id="f_photo_input" accept="image/jpeg, image/png" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handlePhotoUpload(event)">
+                                </div>
+                                <div class="flex-1 text-sm text-gray-500">
+                                    <p class="mb-2"><i class="fa-solid fa-circle-info text-blue-500"></i> คำแนะนำ:</p>
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        <li>รองรับไฟล์ JPG, JPEG, PNG</li>
+                                        <li>ระบบจะช่วย Crop รูปอัตโนมัติให้พอดีกับกรอบบัตร (แนวตั้ง)</li>
+                                        <li>ควรเป็นรูปหน้าตรง พื้นหลังสีพื้น แต่งกายสุภาพ</li>
+                                    </ul>
+                                    <input type="hidden" id="f_photoURL">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <!-- Column 1 -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลส่วนบุคคล</h3>
+                                <div class="space-y-4">
+                                    <div><label class="block text-sm text-gray-600 mb-1">เลขประจำตัวประชาชน *</label><input type="text" id="f_citizenId" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                    <div class="flex gap-2">
+                                        <div class="w-1/3"><label class="block text-sm text-gray-600 mb-1">คำนำหน้า</label><input type="text" id="f_prefix" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                        <div class="w-2/3"><label class="block text-sm text-gray-600 mb-1">ชื่อ (ไทย) *</label><input type="text" id="f_firstName" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                    </div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">นามสกุล (ไทย) *</label><input type="text" id="f_lastName" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                </div>
+                            </div>
+
+                            <!-- Column 2 -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลการทำงาน</h3>
+                                <div class="space-y-4">
+                                    <div><label class="block text-sm text-gray-600 mb-1">รหัสพนักงาน / เลขประจำตัวเจ้าหน้าที่</label><input type="text" id="f_empId" class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                    <div class="flex gap-2">
+                                        <div class="w-1/2"><label class="block text-sm text-gray-600 mb-1">ตำแหน่ง *</label><input type="text" id="f_position" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                        <div class="w-1/2"><label class="block text-sm text-gray-600 mb-1">ระดับ</label><input type="text" id="f_level" class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                    </div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">หน่วยงาน / สังกัด *</label><input type="text" id="f_department" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                </div>
+                            </div>
+
+                            <!-- Column 3 (Full width) -->
+                            <div class="col-span-1 md:col-span-2 pt-4 border-t">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-green-500 pl-2">ข้อมูลเฉพาะของบัตร</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div><label class="block text-sm text-gray-600 mb-1">เลขที่บัตร *</label><input type="text" id="f_cardNum" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร *</label><input type="date" id="f_issueDate" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                    <div><label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ *</label><input type="date" id="f_expireDate" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t flex justify-end gap-3">
+                            <button type="button" onclick="nav('employees')" class="px-6 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">ยกเลิก</button>
+                            <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md font-medium"><i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECTION: Template Settings -->
+            <section id="sec-template-settings" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gov-navy">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
+                    <button onclick="saveTemplateSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-save"></i> บันทึกตำแหน่ง</button>
+                </div>
+                
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Config Panel -->
+                    <div class="w-full lg:w-1/3 bg-white p-4 rounded-lg shadow-sm border overflow-y-auto max-h-[70vh]">
+                        <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-circle-info"></i> ปรับแต่งตำแหน่งและขนาด (อ้างอิงเป็นเปอร์เซ็นต์ % ของความกว้างบัตรรวมหน้า-หลัง)</p>
+                        
+                        <div class="space-y-4" id="config-panel">
+                            <!-- JS will populate these inputs -->
+                        </div>
+                    </div>
+                    <!-- Live Preview -->
+                    <div class="w-full lg:w-2/3">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border flex justify-center items-center bg-gray-100 overflow-x-auto">
+                            <div class="card-preview-container" id="editor-preview-board">
+                                <img src="card_template.png" class="card-bg" alt="Template" onerror="this.src='https://placehold.co/2048x828/fff/ccc?text=MISSING+card_template.png'">
+                                <!-- Dynamic elements applied via JS render function -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Print Preview / View Card -->
+            <section id="sec-print-preview" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6 no-print">
+                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
+                    <div class="flex gap-2">
+                        <button onclick="nav('employees')" class="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-arrow-left"></i> กลับ</button>
+                        <button onclick="executePrint()" class="bg-gov-blue hover:bg-blue-800 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์ (Print / PDF)</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-200 p-8 rounded-lg shadow-inner flex flex-col items-center gap-6 overflow-y-auto no-print" id="print-preview-container">
+                    <!-- JS will generate .card-preview-container here -->
+                </div>
+            </section>
+
+            <!-- SECTION: System Settings (GAS Integration) -->
+            <section id="sec-system-settings" class="view-section hidden">
+                <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
+                    <h2 class="text-xl font-bold text-gov-navy mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
+                    <p class="text-sm text-gray-600 mb-6">หากปล่อยว่างไว้ ระบบจะทำงานในโหมด "Local Storage" (ข้อมูลเก็บเฉพาะในเบราว์เซอร์นี้) หากต้องการให้เชื่อมกับ Google Sheets ให้วาง Web App URL ที่ได้จากขั้นตอนการ Deploy GAS ลงที่นี่</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1">Web App URL (GAS End Point)</label>
+                        <input type="text" id="set_gas_url" placeholder="https://script.google.com/macros/s/AKfycby.../exec" class="w-full border rounded px-3 py-2 font-mono text-sm">
+                    </div>
+                    <button onclick="saveSystemSettings()" class="bg-gov-blue text-white px-4 py-2 rounded"><i class="fa-solid fa-save"></i> บันทึกการเชื่อมต่อ</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Print Render Area (Hidden on screen, shown on Print) -->
+    <div id="print-section" class="hidden">
+        <!-- Rendered Print Cards will go here -->
+    </div>
+
+    <!-- Image Crop Modal -->
+    <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-4 w-full max-w-lg">
+            <h3 class="text-lg font-bold mb-4">ปรับแต่งรูปภาพ (อัตราส่วน 3:4)</h3>
+            <div class="h-64 bg-gray-200 w-full mb-4">
+                <img id="crop-image-target" src="" class="max-w-full">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="cancelCrop()" class="px-4 py-2 border rounded">ยกเลิก</button>
+                <button onclick="confirmCrop()" class="px-4 py-2 bg-gov-blue text-white rounded">ครอบตัดรูปภาพ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        Message
+    </div>
+
+    <!-- SCRIPT APPLICATION LOGIC -->
+    <script>
+        // ==========================================
+        // 1. STATE & INITIALIZATION
+        // ==========================================
+        let GAS_URL = localStorage.getItem('GAS_URL') || '';
+        let USE_LOCAL = GAS_URL === '';
+        
+        let db = { employees: [] }; // Mock Local DB
+        if(USE_LOCAL && !localStorage.getItem('gov_db')) {
+            // Seed Mock Data
+            localStorage.setItem('gov_db', JSON.stringify([{
+                ID: '1', CitizenID: '1-2345-67890-12-3', EmployeeID: 'EMP001', CardNumber: 'C001/2569', Prefix: 'นาย', FirstName: 'สมชาย', LastName: 'ใจดี', Position: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', Department: 'สำนักเทคโนโลยีสารสนเทศ', PhotoURL: 'https://placehold.co/300x400/1d4ed8/fff?text=Photo', IssueDate: '2026-08-01', ExpireDate: '2031-07-31', Status: 'พร้อมพิมพ์'
+            }]));
+        }
+
+        // Default Template Config (Percentages based on 2048x828 template)
+        let tplConfig = {
+            photoX: 2.5, photoY: 19.5, photoW: 11.2, photoH: 35,
+            citizenIdX: 23, citizenIdY: 22, citizenIdSize: 1.5,
+            nameX: 19.5, nameY: 38, nameSize: 1.6,
+            positionX: 19.5, positionY: 48.5, positionSize: 1.4,
+            cardNumX: 74, cardNumY: 64.5, cardNumSize: 1.4,
+            issueDateX: 58, issueDateY: 82, dateSize: 1.2,
+            expireDateX: 84, expireDateY: 82,
+            qrX: 72, qrY: 26.5, qrSize: 9
+        };
+
+        if(localStorage.getItem('gov_tpl_config')) {
+            tplConfig = JSON.parse(localStorage.getItem('gov_tpl_config'));
+        }
+
+        let currentPrintList = [];
+        let cropper = null;
+
+        // Init App
+        window.onload = () => {
+            document.getElementById('set_gas_url').value = GAS_URL;
+            updateConnectionStatus();
+            loadEmployees();
+            nav('dashboard');
+            buildTemplateConfigUI();
+        };
+
+        function updateConnectionStatus() {
+            const st = document.getElementById('conn-status');
+            if(USE_LOCAL) {
+                st.innerText = 'Local Storage (Demo Mode)';
+                st.className = 'text-yellow-500 font-bold';
+            } else {
+                st.innerText = 'Connected (Google Sheets)';
+                st.className = 'text-green-500 font-bold';
+            }
+        }
+
+        // ==========================================
+        // 2. NAVIGATION & UI
+        // ==========================================
+        function nav(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.menu-btn').forEach(el => {
+                el.classList.remove('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
+                el.classList.add('text-gray-600', 'border-transparent');
+            });
+            
+            const btnMap = {
+                'dashboard': 0, 'employees': 1, 'form': 2, 'print-history': 3, 
+                'template-settings': 4, 'system-settings': 5
+            };
+            if(btnMap[viewId] !== undefined) {
+                let btns = document.querySelectorAll('.menu-btn');
+                btns[btnMap[viewId]].classList.add('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
+                btns[btnMap[viewId]].classList.remove('text-gray-600', 'border-transparent');
+            }
+
+            document.getElementById(`sec-${viewId}`).classList.remove('hidden');
+
+            if (viewId === 'dashboard') updateDashboard();
+            if (viewId === 'employees') renderEmployeeTable();
+            if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
+            if (viewId === 'form' && !document.getElementById('f_id').value) {
+                document.getElementById('emp-form').reset();
+                document.getElementById('f_photo_preview').src = '';
+                document.getElementById('f_photo_preview').classList.add('hidden');
+                document.getElementById('f_photo_placeholder').classList.remove('hidden');
+                document.getElementById('form-title').innerText = 'เพิ่มข้อมูลเจ้าหน้าที่';
+            }
+        }
+
+        function showToast(msg, type='info') {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `fixed bottom-4 right-4 px-6 py-3 rounded shadow-lg transform transition-all duration-300 z-50 ${type==='error'?'bg-red-600':'bg-gray-800'} text-white`;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // ==========================================
+        // 3. DATA API (Local / GAS Toggle)
+        // ==========================================
+        function fetchAPI(action, payload=null) {
+            return new Promise((resolve, reject) => {
+                if(USE_LOCAL) {
+                    setTimeout(() => {
+                        let localData = JSON.parse(localStorage.getItem('gov_db'));
+                        if (action === 'getEmployees') resolve({status:'success', data: localData});
+                        else if (action === 'saveEmployee') {
+                            if(payload.ID) {
+                                let idx = localData.findIndex(x=>x.ID === payload.ID);
+                                if(idx>-1) localData[idx] = payload;
+                            } else {
+                                payload.ID = Date.now().toString();
+                                payload.Status = 'รอจัดทำ';
+                                localData.push(payload);
+                            }
+                            localStorage.setItem('gov_db', JSON.stringify(localData));
+                            resolve({status:'success', data: {id: payload.ID}});
+                        }
+                        else if (action === 'recordPrint') {
+                            payload.forEach(r => {
+                                let idx = localData.findIndex(x=>x.ID === r.EmployeeID);
+                                if(idx>-1) localData[idx].Status = 'พิมพ์แล้ว';
+                            });
+                            localStorage.setItem('gov_db', JSON.stringify(localData));
+                            resolve({status:'success'});
+                        }
+                    }, 200);
+                } else {
+                    // Call Google Apps Script
+                    fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: action, payload: payload })
+                    }).then(res => res.json()).then(resolve).catch(reject);
+                }
+            });
+        }
+
+        function loadEmployees() {
+            fetchAPI('getEmployees').then(res => {
+                if(res.status === 'success') {
+                    db.employees = res.data;
+                    updateDashboard();
+                    if(!document.getElementById('sec-employees').classList.contains('hidden')) {
+                        renderEmployeeTable();
+                    }
+                }
+            });
+        }
+
+        function saveSystemSettings() {
+            GAS_URL = document.getElementById('set_gas_url').value.trim();
+            localStorage.setItem('GAS_URL', GAS_URL);
+            USE_LOCAL = GAS_URL === '';
+            updateConnectionStatus();
+            showToast('บันทึกการเชื่อมต่อสำเร็จ ระบบจะรีโหลด...');
+            setTimeout(()=>location.reload(), 1000);
+        }
+
+        // ==========================================
+        // 4. BUSINESS LOGIC (CRUD)
+        // ==========================================
+        function updateDashboard() {
+            document.getElementById('stat-total').innerText = db.employees.length;
+            document.getElementById('stat-pending').innerText = db.employees.filter(e => e.Status === 'รอจัดทำ' || e.Status === 'พร้อมพิมพ์').length;
+            document.getElementById('stat-printed').innerText = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
+            
+            // Check Expired (Dummy logic for now)
+            let exp = 0;
+            const now = new Date();
+            db.employees.forEach(e => {
+                if(e.ExpireDate && new Date(e.ExpireDate) < now) exp++;
+            });
+            document.getElementById('stat-expired').innerText = exp;
+        }
+
+        function renderEmployeeTable() {
+            const tbody = document.getElementById('emp-table-body');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            tbody.innerHTML = '';
+            
+            db.employees.forEach(emp => {
+                const searchStr = `${emp.FirstName} ${emp.LastName} ${emp.EmployeeID} ${emp.CardNumber}`.toLowerCase();
+                if (search && !searchStr.includes(search)) return;
+
+                const statusColor = emp.Status === 'พิมพ์แล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-3 text-center"><input type="checkbox" class="emp-checkbox" value="${emp.ID}"></td>
+                    <td class="p-3"><img src="${emp.PhotoURL || 'https://placehold.co/100?text=No+Img'}" class="w-10 h-12 object-cover rounded shadow-sm"></td>
+                    <td class="p-3 font-mono text-xs">${emp.CardNumber || '-'}</td>
+                    <td class="p-3 font-semibold">${emp.Prefix||''}${emp.FirstName} ${emp.LastName}</td>
+                    <td class="p-3 text-xs">${emp.Position}<br><span class="text-gray-400">${emp.Department}</span></td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${statusColor}">${emp.Status}</span></td>
+                    <td class="p-3 text-center">
+                        <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
+                        <button onclick="previewCard(['${emp.ID}'])" class="text-gov-navy hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleSelectAll() {
+            const chk = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = chk);
+        }
+
+        function saveEmployee(e) {
+            e.preventDefault();
+            const payload = {
+                ID: document.getElementById('f_id').value,
+                CitizenID: document.getElementById('f_citizenId').value,
+                Prefix: document.getElementById('f_prefix').value,
+                FirstName: document.getElementById('f_firstName').value,
+                LastName: document.getElementById('f_lastName').value,
+                EmployeeID: document.getElementById('f_empId').value,
+                Position: document.getElementById('f_position').value,
+                Level: document.getElementById('f_level').value,
+                Department: document.getElementById('f_department').value,
+                CardNumber: document.getElementById('f_cardNum').value,
+                IssueDate: document.getElementById('f_issueDate').value,
+                ExpireDate: document.getElementById('f_expireDate').value,
+                PhotoURL: document.getElementById('f_photoURL').value
+            };
+
+            const btn = e.submitter;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังบันทึก';
+            btn.disabled = true;
+
+            fetchAPI('saveEmployee', payload).then(res => {
+                showToast('บันทึกข้อมูลเรียบร้อย');
+                loadEmployees();
+                nav('employees');
+            }).finally(() => {
+                btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล';
+                btn.disabled = false;
+            });
+        }
+
+        function editEmployee(id) {
+            const emp = db.employees.find(x => x.ID === id);
+            if(!emp) return;
+            
+            document.getElementById('form-title').innerText = 'แก้ไขข้อมูลเจ้าหน้าที่';
+            document.getElementById('f_id').value = emp.ID;
+            document.getElementById('f_citizenId').value = emp.CitizenID || '';
+            document.getElementById('f_prefix').value = emp.Prefix || '';
+            document.getElementById('f_firstName').value = emp.FirstName || '';
+            document.getElementById('f_lastName').value = emp.LastName || '';
+            document.getElementById('f_empId').value = emp.EmployeeID || '';
+            document.getElementById('f_position').value = emp.Position || '';
+            document.getElementById('f_level').value = emp.Level || '';
+            document.getElementById('f_department').value = emp.Department || '';
+            document.getElementById('f_cardNum').value = emp.CardNumber || '';
+            
+            // Format Date for input type=date
+            const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
+            document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
+            document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
+            
+            document.getElementById('f_photoURL').value = emp.PhotoURL || '';
+            if(emp.PhotoURL) {
+                document.getElementById('f_photo_preview').src = emp.PhotoURL;
+                document.getElementById('f_photo_preview').classList.remove('hidden');
+                document.getElementById('f_photo_placeholder').classList.add('hidden');
+            }
+            
+            nav('form');
+        }
+
+        // ==========================================
+        // 5. PHOTO UPLOAD & CROP (Cropper.js)
+        // ==========================================
+        function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('crop-image-target').src = event.target.result;
+                document.getElementById('crop-modal').classList.remove('hidden');
+                
+                if(cropper) cropper.destroy();
+                cropper = new Cropper(document.getElementById('crop-image-target'), {
+                    aspectRatio: 3 / 4, // สัดส่วนรูปติดบัตรทั่วไป
+                    viewMode: 1
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function cancelCrop() {
+            document.getElementById('crop-modal').classList.add('hidden');
+            if(cropper) cropper.destroy();
+            document.getElementById('f_photo_input').value = '';
+        }
+
+        function confirmCrop() {
+            if(!cropper) return;
+            const canvas = cropper.getCroppedCanvas({ width: 300, height: 400 });
+            const base64Img = canvas.toDataURL('image/jpeg', 0.8);
+            
+            document.getElementById('crop-modal').classList.add('hidden');
+            document.getElementById('f_photo_preview').src = base64Img;
+            document.getElementById('f_photo_preview').classList.remove('hidden');
+            document.getElementById('f_photo_placeholder').classList.add('hidden');
+            
+            if(USE_LOCAL) {
+                document.getElementById('f_photoURL').value = base64Img;
+            } else {
+                showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
+                fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
+                    if(res.status==='success') {
+                        document.getElementById('f_photoURL').value = res.data; // Gets Google Drive URL
+                        showToast('อัปโหลดสำเร็จ', 'success');
+                    }
+                });
+            }
+        }
+
+        // ==========================================
+        // 6. TEMPLATE ENGINE (OVERLAY SYSTEM)
+        // ==========================================
+        function getMockEmp() {
+            return {
+                PhotoURL: 'https://placehold.co/300x400/ccc/666?text=Photo',
+                CitizenID: '1-2345-67890-12-3', Prefix: 'นาย', FirstName: 'ตัวอย่าง', LastName: 'ทดสอบ',
+                Position: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', CardNumber: 'TEST-001',
+                IssueDate: '2026-08-01', ExpireDate: '2031-08-01', EmployeeID: 'EMP999'
+            };
+        }
+
+        function buildTemplateConfigUI() {
+            const p = document.getElementById('config-panel');
+            p.innerHTML = '';
+            
+            const createGroup = (title, keys) => {
+                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200"><h4 class="font-semibold text-gov-blue mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
+                keys.forEach(k => {
+                    html += `<div><label class="block text-xs text-gray-500">${k.label}</label>
+                             <input type="number" step="0.1" id="cfg_${k.id}" value="${tplConfig[k.id]}" oninput="updateConfigLive()" class="w-full border rounded px-2 py-1 text-sm"></div>`;
+                });
+                html += `</div></div>`;
+                p.innerHTML += html;
+            }
+
+            createGroup('รูปถ่าย (ซ้าย: X, บน: Y, กว้าง: W, สูง: H)', [
+                {id: 'photoX', label: 'แกน X (%)'}, {id: 'photoY', label: 'แกน Y (%)'},
+                {id: 'photoW', label: 'ความกว้าง (%)'}, {id: 'photoH', label: 'ความสูง (%)'}
+            ]);
+            createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
+            createGroup('เลขที่บัตร (ด้านหลัง)', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
+            createGroup('วันที่ออก-หมดอายุ', [{id:'issueDateX', label:'ออกบัตร X'}, {id:'expireDateX', label:'หมดอายุ X'}, {id:'issueDateY', label:'แกน Y'}, {id:'dateSize', label:'ขนาด Font (vw)'}]);
+            createGroup('QR Code', [{id:'qrX', label:'แกน X (%)'}, {id:'qrY', label:'แกน Y (%)'}, {id:'qrSize', label:'ขนาด (%)'}]);
+        }
+
+        function updateConfigLive() {
+            for(let key in tplConfig) {
+                let el = document.getElementById(`cfg_${key}`);
+                if(el) tplConfig[key] = parseFloat(el.value);
+            }
+            renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
+        }
+
+        function saveTemplateSettings() {
+            localStorage.setItem('gov_tpl_config', JSON.stringify(tplConfig));
+            showToast('บันทึกตำแหน่ง Template สำเร็จ');
+            if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
+        }
+
+        // หัวใจหลัก: ฟังก์ชันสร้าง HTML overlay บนรูป Template
+        function renderPreviewBoard(emp, targetContainerId) {
+            const container = document.getElementById(targetContainerId);
+            if(!container) return;
+
+            const formatThaiDate = (dStr) => {
+                if(!dStr) return '-';
+                const d = new Date(dStr);
+                const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+                return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
+            };
+
+            // สร้าง HTML ภายใน container ที่มี aspect-ratio 2048/828
+            let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
+            
+            // 1. รูปถ่าย
+            html += `<div class="overlay-photo" style="left:${tplConfig.photoX}%; top:${tplConfig.photoY}%; width:${tplConfig.photoW}%; height:${tplConfig.photoH}%; background-image: url('${emp.PhotoURL}');"></div>`;
+            
+            // 2. ข้อมูลส่วนบุคคล (ด้านหน้า)
+            // Font size ใช้หน่วย vw เมื่อยู่ในหน้าจอปกติ แต่ใน print media จะถูก map ใหม่ ให้ใช้ em หรือ % จะดีกว่า
+            // เพื่อให้แม่นยำที่สุดเมื่อยืดหด (aspect-ratio) ให้ใช้ % ของความกว้าง container
+            // ตัวอย่าง: size: 1.5 หมายถึง 1.5% ของความกว้างทั้งหมด (2048) = ประมาณ 30px
+            const createTxt = (id, text, x, y, size, fw='normal') => {
+                return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw};">${text}</div>`;
+            };
+
+            html += createTxt('citizenId', (emp.CitizenID||'-').split('').join(' '), tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, 'bold');
+            html += createTxt('name', `${emp.Prefix||''}${emp.FirstName||''}  ${emp.LastName||''}`, tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, 'bold');
+            html += createTxt('position', emp.Position||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize);
+            
+            // 3. ข้อมูลบัตร (ด้านหลัง)
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize);
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY, tplConfig.dateSize);
+
+            // 4. QR Code Container (จะ generate ผ่าน QRCode.js ทีหลัง)
+            html += `<div id="${targetContainerId}_qr" class="overlay-qr" style="left:${tplConfig.qrX}%; top:${tplConfig.qrY}%; width:${tplConfig.qrSize}%; aspect-ratio: 1/1;"></div>`;
+
+            // Wrap contents inside a div that defines --card-width so font-size: calc() works reliably
+            // ใช้ ResizeObserver แบบ inline CSS hack: 
+            container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
+
+            // สร้าง QR Code (ดีเลย์นิดหน่อยให้ DOM สร้างเสร็จ)
+            setTimeout(() => {
+                const qrEl = document.getElementById(`${targetContainerId}_qr`);
+                if(qrEl) {
+                    qrEl.innerHTML = '';
+                    new QRCode(qrEl, {
+                        text: `Verify: ${emp.EmployeeID} / ${emp.CardNumber}`,
+                        width: qrEl.offsetWidth,
+                        height: qrEl.offsetHeight,
+                        colorDark : "#0f172a",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.M
+                    });
+                }
+            }, 50);
+        }
+
+        // ==========================================
+        // 7. PRINTING SYSTEM
+        // ==========================================
+        function prepareBatchPrint() {
+            const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
+            if(checked.length === 0) {
+                showToast('กรุณาเลือกเจ้าหน้าที่อย่างน้อย 1 รายการ', 'error');
+                return;
+            }
+            previewCard(checked);
+        }
+
+        function previewCard(empIds) {
+            currentPrintList = [];
+            const printPreviewContainer = document.getElementById('print-preview-container');
+            printPreviewContainer.innerHTML = '';
+
+            empIds.forEach((id, idx) => {
+                const emp = db.employees.find(x => x.ID === id);
+                if(!emp) return;
+                
+                // ตรวจสอบข้อมูลบังคับก่อนพิมพ์
+                if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
+                    showToast(`ข้อมูลของ ${emp.FirstName} ไม่ครบถ้วน (ต้องมีรูป/เลขบัตร)`, 'error');
+                    return;
+                }
+
+                currentPrintList.push(emp);
+                
+                // สร้างกล่อง Preview สำหรับแสดงผลบนหน้าจอ
+                const cardDiv = document.createElement('div');
+                const uuid = 'prev_' + Math.random().toString(36).substring(7);
+                cardDiv.id = uuid;
+                cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
+                printPreviewContainer.appendChild(cardDiv);
+                
+                renderPreviewBoard(emp, uuid);
+            });
+
+            if(currentPrintList.length > 0) {
+                nav('print-preview');
+            }
+        }
+
+        function executePrint() {
+            if(currentPrintList.length === 0) return;
+
+            // นำ Card Preview ไปใส่ใน #print-section (ซึ่งจะถูกโชว์ตอน @media print)
+            const printSection = document.getElementById('print-section');
+            printSection.innerHTML = '';
+
+            currentPrintList.forEach(emp => {
+                const cardDiv = document.createElement('div');
+                const uuid = 'print_' + Math.random().toString(36).substring(7);
+                cardDiv.id = uuid;
+                cardDiv.className = 'print-card-wrapper'; // Class ที่ถูกสั่งงานด้วย @media print
+                printSection.appendChild(cardDiv);
+                
+                renderPreviewBoard(emp, uuid);
+            });
+
+            // รอ QR Code render เสร็จใน Print Section ก่อนสั่งพิมพ์
+            setTimeout(() => {
+                window.print();
+                
+                // หลังพิมพ์เสร็จ (สมมติว่าพิมพ์สำเร็จ) -> บันทึกประวัติ
+                if(confirm('การพิมพ์เสร็จสิ้นและสมบูรณ์หรือไม่? (กด OK เพื่อบันทึกประวัติการพิมพ์)')) {
+                    const printPayload = currentPrintList.map(e => ({ EmployeeID: e.ID, CardNumber: e.CardNumber, EmployeeName: `${e.FirstName} ${e.LastName}` }));
+                    fetchAPI('recordPrint', printPayload).then(() => {
+                        showToast('บันทึกประวัติการพิมพ์สำเร็จ', 'success');
+                        loadEmployees(); // Update Status
+                    });
+                }
+            }, 500);
+        }
+
+    </script>
+</body>
+</html>
