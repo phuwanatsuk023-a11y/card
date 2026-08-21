@@ -1,966 +1,428 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดทำและพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</title>
-    
-    <!-- Fonts: Noto Sans Thai -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
+    <title>ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['"Noto Sans Thai"', 'sans-serif'] },
-                    colors: {
-                        gov: { navy: '#0f172a', blue: '#1d4ed8', gold: '#eab308', light: '#f8fafc' }
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Icons (FontAwesome) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Cropper.js for Photo Upload -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    
-    <!-- QRCode.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
+    <!-- SweetAlert2 & jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
-        @media print {
-            body { background: white; margin: 0; padding: 0; }
-            #sidebar, #topbar, .no-print { display: none !important; }
-            #app-container { margin: 0 !important; padding: 0 !important; width: 100% !important; display: block !important; }
-            #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
-            .print-card-wrapper {
-                width: 172mm !important; 
-                height: 69.5mm !important; 
-                page-break-inside: avoid;
-                margin-bottom: 10mm;
-                position: relative;
-                box-shadow: none !important;
-                border: none !important;
-            }
-            .print-card-wrapper img.card-bg {
-                width: 100%; height: 100%; object-fit: contain;
-            }
+        body {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
         }
-
-        .card-preview-container {
-            position: relative;
-            width: 100%;
-            max-width: 900px; 
-            aspect-ratio: 2048 / 828;
-            background-color: white;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            overflow: hidden;
-            border: 1px solid #ccc;
-        }
-        .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
         
-        .overlay-item {
-            position: absolute;
-            z-index: 10;
-            color: #000;
-            white-space: nowrap;
-        }
-        .overlay-photo {
-            position: absolute;
-            z-index: 10;
-            background-color: #e2e8f0;
+        .bg-custom-image {
+            background-image: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.75)), url('Image.png');
             background-size: cover;
             background-position: center;
         }
-        .overlay-qr {
-            position: absolute;
-            z-index: 10;
-            background-color: white;
-            padding: 2px;
+        
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
         }
         
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .btn-primary {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(30, 64, 175, 0.3);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
-<body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
-
-    <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
-        <div class="px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-building-columns text-gov-gold text-2xl"></i>
-                <div>
-                    <h1 class="text-xl font-bold tracking-wide">ระบบจัดทำและพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
-                    <p class="text-xs text-gray-300" id="header-org-name">องค์กรปกครองส่วนท้องถิ่น HR-warin</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold">นายผู้ดูแล ระบบ</p>
-                    <p class="text-xs text-gray-300">Administrator</p>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-gov-blue flex items-center justify-center text-white border-2 border-gov-gold">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-                <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ">
-                    <i class="fa-solid fa-right-from-bracket text-xl"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <div id="app-container" class="flex flex-1 overflow-hidden">
-        
-        <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
-            <nav class="flex-1 py-4 flex flex-col gap-1">
-                <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-chart-pie w-5"></i> <span>Dashboard</span>
-                </a>
-                <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลเจ้าหน้าที่</span>
-                </a>
-                <a href="#" onclick="openAddForm()" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-user-plus w-5"></i> <span>เพิ่มข้อมูลใหม่</span>
-                </a>
-                <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>ประวัติการพิมพ์</span>
-                </a>
-                <div class="my-2 border-t border-gray-100"></div>
-                <p class="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ตั้งค่าระบบ</p>
-                <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-id-card-clip w-5"></i> <span>ตั้งค่า Template บัตร</span>
-                </a>
-                <a href="#" onclick="nav('system-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-gears w-5"></i> <span>ตั้งค่าการเชื่อมต่อ (GAS)</span>
-                </a>
-            </nav>
-            <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-400">
-                GovCard Pro v1.0<br>Status: <span id="conn-status" class="text-green-500 font-bold">Local Storage</span>
-            </div>
-        </aside>
-
-        <main id="content" class="flex-1 bg-gray-50 overflow-y-auto p-6 relative">
+<body class="h-full bg-slate-900 bg-custom-image min-h-screen flex items-center justify-center">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             
-            <section id="sec-dashboard" class="view-section">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy">ภาพรวมระบบ (Dashboard)</h2>
-                    <div class="flex gap-2">
-                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
-                            <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
-                        </button>
-                    </div>
+            <!-- ฝั่งซ้าย: ข้อความต้อนรับและรายละเอียดระบบ -->
+            <div class="text-center lg:text-left text-white">
+                <div class="space-y-4">
+                    <h2 class="text-2xl lg:text-3xl font-light text-blue-200 drop-shadow-md">
+                        ยินดีต้อนรับสู่ระบบ
+                    </h2>
+                    <h1 class="text-4xl lg:text-5xl font-bold text-white drop-shadow-lg leading-tight">
+                        พิมพ์บัตรประจำตัว<br>
+                        <span class="text-blue-400">เจ้าหน้าที่รัฐ</span>
+                    </h1>
+                    <p class="text-blue-100 text-lg lg:text-xl font-normal drop-shadow pt-2">
+                        สะดวกรวดเร็ว แม่นยำ และได้มาตรฐาน
+                    </p>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-blue-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-gray-500 text-sm font-medium">เจ้าหน้าที่ทั้งหมด</p>
-                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-total">0</h3>
-                            </div>
-                            <div class="w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
-                        </div>
+            </div>
+            
+            <!-- ฝั่งขวา: ฟอร์มเข้าสู่ระบบ (Login) -->
+            <div class="flex justify-center">
+                <div class="bg-white/95 backdrop-blur-md rounded-2xl card-shadow p-8 max-w-md w-full border border-blue-100">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-blue-900 mb-1">🔑 เข้าสู่ระบบ</h3>
+                        <p class="text-xs text-gray-500 mb-4">กรุณาใช้บัญชีผู้ใช้งานเพื่อเข้าสู่การจัดการข้อมูล</p>
                     </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-yellow-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-gray-500 text-sm font-medium">รอจัดทำ / พร้อมพิมพ์</p>
-                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-pending">0</h3>
-                            </div>
-                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-clock"></i></div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-green-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-gray-500 text-sm font-medium">พิมพ์แล้ว</p>
-                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-printed">0</h3>
-                            </div>
-                            <div class="w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-print"></i></div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-red-500">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-gray-500 text-sm font-medium">บัตรหมดอายุ</p>
-                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-expired">0</h3>
-                            </div>
-                            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-id-card-clip"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
-            <section id="sec-employees" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy">ข้อมูลเจ้าหน้าที่</h2>
-                    <div class="flex gap-2">
-                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
-                        <button onclick="prepareBatchPrint()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-print"></i> พิมพ์รายการที่เลือก</button>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div class="p-4 border-b border-gray-200 flex gap-4 bg-gray-50 rounded-t-lg">
-                        <div class="relative flex-1">
-                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
-                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวเจ้าหน้าที่ หรือเลขที่บัตร..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-gov-blue focus:ring-1 focus:ring-gov-blue">
+                    <?php if ($error_message): ?>
+                        <div class='p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-300' role='alert'>
+                            <?= htmlspecialchars($error_message) ?>
                         </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-600 text-sm border-b">
-                                    <th class="p-3 w-10 text-center"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
-                                    <th class="p-3">รูปถ่าย</th>
-                                    <th class="p-3">เลขที่บัตร</th>
-                                    <th class="p-3">ชื่อ - นามสกุล</th>
-                                    <th class="p-3">ตำแหน่ง / หน่วยงาน</th>
-                                    <th class="p-3 text-center">สถานะ</th>
-                                    <th class="p-3 text-center w-40">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="emp-table-body" class="text-sm">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+                    <?php endif; ?>
+                    
+                    <?php if ($message): ?>
+                        <div class='p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg border border-green-300' role='alert'>
+                            <?= htmlspecialchars($message) ?>
+                        </div>
+                    <?php endif; ?>
 
-            <section id="sec-form" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy" id="form-title">เพิ่มข้อมูลเจ้าหน้าที่</h2>
-                    <button onclick="nav('employees')" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-arrow-left"></i> กลับหน้ารายการ</button>
-                </div>
-
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <form id="emp-form" onsubmit="saveEmployee(event)">
-                        <input type="hidden" id="f_id">
-                        
-                        <div class="mb-8 border-b pb-6">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-gold pl-2">รูปถ่ายสำหรับติดบัตร</h3>
-                            <div class="flex items-start gap-6">
-                                <div class="w-32 h-40 bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative group cursor-pointer overflow-hidden">
-                                    <img id="f_photo_preview" src="" class="absolute inset-0 w-full h-full object-cover hidden">
-                                    <div class="text-center text-gray-400 group-hover:text-gov-blue p-2" id="f_photo_placeholder">
-                                        <i class="fa-solid fa-camera text-2xl mb-1"></i><br><span class="text-xs">อัปโหลดรูป</span>
-                                    </div>
-                                    <input type="file" id="f_photo_input" accept="image/jpeg, image/png" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handlePhotoUpload(event)">
-                                </div>
-                                <div class="flex-1 text-sm text-gray-500">
-                                    <p class="mb-2"><i class="fa-solid fa-circle-info text-blue-500"></i> คำแนะนำ:</p>
-                                    <ul class="list-disc pl-5 space-y-1">
-                                        <li>รองรับไฟล์ JPG, JPEG, PNG</li>
-                                        <li>ระบบจะช่วย Crop รูปอัตโนมัติให้พอดีกับกรอบบัตร (แนวตั้ง)</li>
-                                        <li>ควรเป็นรูปหน้าตรง พื้นหลังสีพื้น แต่งกายสุภาพ</li>
-                                    </ul>
-                                    <input type="hidden" id="f_photoURL">
-                                </div>
-                            </div>
+                    <form method="POST" action="" class="space-y-4">
+                        <div>
+                            <label for="username" class="block text-sm font-medium text-gray-700">ชื่อผู้ใช้ (Username)</label>
+                            <input type="text" id="username" name="username" required 
+                                   value="<?= htmlspecialchars($username) ?>"
+                                   class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-gray-800"
+                                   placeholder="">
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลส่วนบุคคล</h3>
-                                <div class="space-y-4">
-                                    <div><label class="block text-sm text-gray-600 mb-1">เลขประจำตัวประชาชน *</label><input type="text" id="f_citizenId" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                    <div class="flex gap-2">
-                                        <div class="w-1/3"><label class="block text-sm text-gray-600 mb-1">คำนำหน้า</label><input type="text" id="f_prefix" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                        <div class="w-2/3"><label class="block text-sm text-gray-600 mb-1">ชื่อ (ไทย) *</label><input type="text" id="f_firstName" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                    </div>
-                                    <div><label class="block text-sm text-gray-600 mb-1">นามสกุล (ไทย) *</label><input type="text" id="f_lastName" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลการทำงาน</h3>
-                                <div class="space-y-4">
-                                    <div><label class="block text-sm text-gray-600 mb-1">รหัสพนักงาน / เลขประจำตัวเจ้าหน้าที่</label><input type="text" id="f_empId" class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                    <div class="flex gap-2">
-                                        <div class="w-1/2"><label class="block text-sm text-gray-600 mb-1">ตำแหน่ง *</label><input type="text" id="f_position" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                        <div class="w-1/2"><label class="block text-sm text-gray-600 mb-1">ระดับ</label><input type="text" id="f_level" class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                    </div>
-                                    <div><label class="block text-sm text-gray-600 mb-1">หน่วยงาน / สังกัด *</label><input type="text" id="f_department" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                </div>
-                            </div>
-
-                            <div class="col-span-1 md:col-span-2 pt-4 border-t">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-green-500 pl-2">ข้อมูลเฉพาะของบัตร</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div><label class="block text-sm text-gray-600 mb-1">เลขที่บัตร *</label><input type="text" id="f_cardNum" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                    <div><label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร *</label><input type="date" id="f_issueDate" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                    <div><label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ *</label><input type="date" id="f_expireDate" required class="w-full border rounded px-3 py-2 focus:ring-1 focus:ring-gov-blue focus:outline-none"></div>
-                                </div>
-                            </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">รหัสผ่าน (Password)</label>
+                            <input type="password" id="password" name="password" required 
+                                   class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-gray-800"
+                                   placeholder="">
                         </div>
 
-                        <div class="mt-8 pt-6 border-t flex justify-end gap-3">
-                            <button type="button" onclick="nav('employees')" class="px-6 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">ยกเลิก</button>
-                            <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md font-medium"><i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล</button>
+                        <div class="pt-2">
+                            <button type="submit" 
+                                    class="btn-primary w-full flex justify-center py-3 px-4 border border-transparent 
+                                           rounded-xl shadow-sm text-lg font-semibold text-white 
+                                           focus:outline-none focus:ring-2 focus:ring-offset-2 
+                                           focus:ring-blue-500 transition duration-150">
+                                เข้าสู่ระบบ
+                            </button>
                         </div>
                     </form>
-                </div>
-            </section>
-
-            <section id="sec-template-settings" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
-                    <button onclick="saveTemplateSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-save"></i> บันทึกตำแหน่ง</button>
-                </div>
-                
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <div class="w-full lg:w-1/3 bg-white p-4 rounded-lg shadow-sm border overflow-y-auto max-h-[70vh]">
-                        <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-circle-info"></i> ปรับแต่งตำแหน่งและขนาด (อ้างอิงเป็นเปอร์เซ็นต์ % ของความกว้างบัตรรวมหน้า-หลัง)</p>
-                        <div class="space-y-4" id="config-panel"></div>
-                    </div>
-                    <div class="w-full lg:w-2/3">
-                        <div class="bg-white p-4 rounded-lg shadow-sm border flex justify-center items-center bg-gray-100 overflow-x-auto">
-                            <div class="card-preview-container" id="editor-preview-board">
-                                <img src="card_template.png" class="card-bg" alt="Template" onerror="this.src='https://placehold.co/2048x828/fff/ccc?text=MISSING+card_template.png'">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="sec-print-preview" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6 no-print">
-                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
-                    <div class="flex gap-2">
-                        <button onclick="nav('employees')" class="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-arrow-left"></i> กลับ</button>
-                        <button onclick="executePrint()" class="bg-gov-blue hover:bg-blue-800 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์ (Print / PDF)</button>
-                    </div>
-                </div>
-
-                <div class="bg-gray-200 p-8 rounded-lg shadow-inner flex flex-col items-center gap-6 overflow-y-auto no-print" id="print-preview-container">
-                </div>
-            </section>
-
-            <section id="sec-system-settings" class="view-section hidden">
-                <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
-                    <h2 class="text-xl font-bold text-gov-navy mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
-                    <p class="text-sm text-gray-600 mb-6">หากปล่อยว่างไว้ ระบบจะทำงานในโหมด "Local Storage" (ข้อมูลเก็บเฉพาะในเบราว์เซอร์นี้) หากต้องการให้เชื่อมกับ Google Sheets ให้วาง Web App URL ที่ได้จากขั้นตอนการ Deploy GAS ลงที่นี่</p>
                     
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold mb-1">Web App URL (GAS End Point)</label>
-                        <input type="text" id="set_gas_url" placeholder="https://script.google.com/macros/s/AKfycby.../exec" class="w-full border rounded px-3 py-2 font-mono text-sm">
-                    </div>
-                    <button onclick="saveSystemSettings()" class="bg-gov-blue text-white px-4 py-2 rounded"><i class="fa-solid fa-save"></i> บันทึกการเชื่อมต่อ</button>
+                    <p class="mt-6 text-center text-xs text-gray-500">
+                        หากพบปัญหาในการเข้าสู่ระบบ <a href="#" id="openQrModal" class="text-blue-600 hover:text-blue-800 hover:underline font-medium transition duration-150">กรุณาติดต่อผู้ดูแลระบบ</a>
+                    </p>
+                   
+                    <p class="mt-4 text-center text-sm text-gray-600">
+                        ยังไม่มีบัญชี? 
+                        <a href="#" id="openRegisterModal" class="font-medium text-blue-600 hover:text-blue-500 transition duration-150">
+                            ลงทะเบียนใช้งานที่นี่
+                        </a>
+                    </p>
                 </div>
-            </section>
+            </div>
 
-        </main>
+        </div>
     </div>
 
-    <div id="print-section" class="hidden"></div>
-
-    <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg p-4 w-full max-w-lg">
-            <h3 class="text-lg font-bold mb-4">ปรับแต่งรูปภาพ (อัตราส่วน 3:4)</h3>
-            <div class="h-64 bg-gray-200 w-full mb-4">
-                <img id="crop-image-target" src="" class="max-w-full">
+    <!-- Modal ลงทะเบียนใช้งาน -->
+    <div id="registerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-blue-100 transform transition-all duration-300 scale-95 opacity-0" id="modalContainer">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    📝 ลงทะเบียนใช้งานระบบใหม่
+                </h3>
+                <button type="button" id="closeModalBtn" class="text-white/80 hover:text-white text-2xl font-bold focus:outline-none">&times;</button>
             </div>
-            <div class="flex justify-end gap-2">
-                <button onclick="cancelCrop()" class="px-4 py-2 border rounded">ยกเลิก</button>
-                <button onclick="confirmCrop()" class="px-4 py-2 bg-gov-blue text-white rounded">ครอบตัดรูปภาพ</button>
+
+            <!-- Modal Body -->
+            <div class="p-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                <form id="registerForm" enctype="multipart/form-data" class="space-y-4">
+                    <input type="hidden" name="action" value="register">
+                    
+                    <!-- ส่วนแสดงตัวอย่างรูปภาพ (Image Preview) สไตล์ edit_profile -->
+                    <div class="flex flex-col sm:flex-row items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="shrink-0">
+                            <img id="profileImagePreview" src="https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128" alt="ตัวอย่างรูปโปรไฟล์" class="w-20 h-20 rounded-full object-cover border-2 border-blue-100 shadow-sm">
+                        </div>
+                        <div class="flex-1 space-y-1 w-full text-center sm:text-left">
+                            <label class="block text-xs font-semibold text-gray-700">รูปโปรไฟล์ (JPG, PNG, WEBP / Max 2MB)</label>
+                            <input type="file" id="profile_image_input" name="profile_image" accept="image/jpeg,image/png,image/webp" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                            <p id="profileImageName" class="text-[11px] text-gray-400 truncate max-w-[200px]"></p>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200 my-2"> <!-- ขีดเส้นสีเทา -->
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">ชื่อ <span class="text-red-500">*</span></label>
+                            <input type="text" name="firstname" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">นามสกุล <span class="text-red-500">*</span></label>
+                            <input type="text" name="lastname" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">ตำแหน่ง</label>
+                            <input type="text" name="position" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="เช่น นักทรัพยากรบุคคล">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">หน่วยงาน</label>
+                            <input type="text" name="organization" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="เช่น เทศบาล...">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+                            <input type="tel" name="phone" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0812345678">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                            <input type="email" name="email" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="example@email.com">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">ID Line</label>
+                            <input type="text" name="line_id" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Line ID">
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200 my-2">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
+                            <input type="text" name="username" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="ชื่อผู้ใช้สำหรับเข้าสู่ระบบ">
+                        </div>
+                        
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+						<div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Password (ต้องมีความยาวอย่างน้อย 8 ตัวอักษร) <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="password" name="password" id="reg_password" required class="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="พิมพ์ใหญ่, เล็ก, ตัวเลข">
+                                <button type="button" id="toggleRegPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <svg id="eyeIconReg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="password" name="confirm_password" id="confirm_password" required class="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="ยืนยันรหัสผ่านอีกครั้ง">
+                                <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <svg id="eyeIconConfirm" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+					<div class="pt-2 md:pt-5">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="terms" required class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="ml-2 text-xs text-gray-700 font-medium">ยอมรับเงื่อนไขการใช้งานระบบ <span class="text-red-500">*</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer Buttons -->
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
+                        
+                        <button type="submit" id="submitRegisterBtn" class="px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">ยืนยันสมัครสมาชิก</button>
+						<button type="button" id="cancelModalBtn" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition">ยกเลิก</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
-        Message
-    </div>
-
+    <!-- JavaScript ควบคุม Modal และ AJAX Registration พร้อมระบบดักจับ Error ที่ละเอียดยิ่งขึ้น -->
     <script>
-        let GAS_URL = localStorage.getItem('GAS_URL') || '';
-        let USE_LOCAL = GAS_URL === '';
-        
-        let db = { employees: [] }; 
-        if(USE_LOCAL && !localStorage.getItem('gov_db')) {
-            localStorage.setItem('gov_db', JSON.stringify([{
-                ID: '1', CitizenID: '1-2345-67890-12-3', EmployeeID: 'EMP001', CardNumber: 'C001/2569', Prefix: 'นาย', FirstName: 'สมชาย', LastName: 'ใจดี', Position: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', Department: 'สำนักเทคโนโลยีสารสนเทศ', PhotoURL: 'https://placehold.co/300x400/1d4ed8/fff?text=Photo', IssueDate: '2026-08-01', ExpireDate: '2031-07-31', Status: 'พร้อมพิมพ์'
-            }]));
-        }
+        $(document).ready(function() {
+            const $modal = $('#registerModal');
+            const $modalContainer = $('#modalContainer');
 
-        // ปรับ Config เริ่มต้นให้ตรงกับภาพ card_template.png
-        let tplConfig = {
-            photoX: 1.1, photoY: 16.5, photoW: 13, photoH: 38,
-            citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
-            nameX: 17, nameY: 34, nameSize: 1.6,
-            positionX: 17, positionY: 43, positionSize: 1.4,
-            cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
-            issueDateX: 62, issueDateY: 78, dateSize: 1.2,
-            expireDateX: 85, expireDateY: 78,
-            qrX: 85, qrY: 20, qrSize: 9
-        };
+            // SVG Icons สำหรับตาเปิดและตาปิด
+            const eyeOpenSvg = `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+            const eyeClosedSvg = `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.032 10.032 0 012.238-3.792m3.674-2.222A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.027 10.027 0 01-4.132 5.411m0 0L21 21" /></svg>`;
 
-        if(localStorage.getItem('gov_tpl_config')) {
-            tplConfig = JSON.parse(localStorage.getItem('gov_tpl_config'));
-        }
-
-        let currentPrintList = [];
-        let cropper = null;
-
-        window.onload = () => {
-            document.getElementById('set_gas_url').value = GAS_URL;
-            updateConnectionStatus();
-            loadEmployees();
-            nav('dashboard');
-            buildTemplateConfigUI();
-        };
-
-        function updateConnectionStatus() {
-            const st = document.getElementById('conn-status');
-            if(USE_LOCAL) {
-                st.innerText = 'Local Storage (Demo Mode)';
-                st.className = 'text-yellow-500 font-bold';
-            } else {
-                st.innerText = 'Connected (Google Sheets)';
-                st.className = 'text-green-500 font-bold';
-            }
-        }
-
-        function nav(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.menu-btn').forEach(el => {
-                el.classList.remove('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
-                el.classList.add('text-gray-600', 'border-transparent');
+            // แสดง QR Code สำหรับติดต่อผู้ดูแลระบบเมื่อกดลิงก์
+            $('#openQrModal').on('click', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'ติดต่อผู้ดูแลระบบ',
+                    text: 'สแกน QR Code ด้านล่างเพื่อติดต่อผ่าน Line',
+                    imageUrl: 'Qr Code Line.jpg',
+                    imageWidth: 220,
+                    imageHeight: 220,
+                    imageAlt: 'QR Code Line ติดต่อผู้ดูแลระบบ',
+                    confirmButtonText: 'ปิด',
+                    confirmButtonColor: '#2563eb'
+                });
             });
-            
-            const btnMap = {
-                'dashboard': 0, 'employees': 1, 'form': 2, 'print-history': 3, 
-                'template-settings': 4, 'system-settings': 5
-            };
-            if(btnMap[viewId] !== undefined) {
-                let btns = document.querySelectorAll('.menu-btn');
-                btns[btnMap[viewId]].classList.add('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
-                btns[btnMap[viewId]].classList.remove('text-gray-600', 'border-transparent');
+
+            function openModal() {
+                $modal.removeClass('hidden');
+                setTimeout(() => {
+                    $modalContainer.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+                }, 10);
             }
 
-            document.getElementById(`sec-${viewId}`).classList.remove('hidden');
+            function closeModal() {
+                $modalContainer.removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+                setTimeout(() => {
+                    $modal.addClass('hidden');
+                    $('#registerForm')[0].reset();
+                    // รีเซ็ตสถานะรูปโปรไฟล์ตัวอย่างเป็นค่าเริ่มต้นเหมือน edit_profile
+                    $('#profileImagePreview').attr('src', 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128');
+                    $('#profileImageName').text('');
+                    // รีเซ็ตสถานะช่องรหัสผ่านและไอคอนตกลับเป็นค่าเริ่มต้น
+                    $('#reg_password, #confirm_password').attr('type', 'password');
+                    $('#toggleRegPassword').html(eyeOpenSvg);
+                    $('#toggleConfirmPassword').html(eyeOpenSvg);
+                }, 300);
+            }
 
-            if (viewId === 'dashboard') updateDashboard();
-            if (viewId === 'employees') renderEmployeeTable();
-            if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
-        }
-
-        // เพิ่มฟังก์ชันสำหรับเคลียร์ค่าในฟอร์มเมื่อกด "เพิ่มข้อมูลใหม่" ป้องกันการทับข้อมูลเดิม
-        function openAddForm() {
-            document.getElementById('f_id').value = '';
-            document.getElementById('emp-form').reset();
-            document.getElementById('f_photo_preview').src = '';
-            document.getElementById('f_photo_preview').classList.add('hidden');
-            document.getElementById('f_photo_placeholder').classList.remove('hidden');
-            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลเจ้าหน้าที่';
-            document.getElementById('f_photoURL').value = '';
-            nav('form');
-        }
-
-        function showToast(msg, type='info') {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.className = `fixed bottom-4 right-4 px-6 py-3 rounded shadow-lg transform transition-all duration-300 z-50 ${type==='error'?'bg-red-600':'bg-gray-800'} text-white`;
-            t.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                t.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-
-        function fetchAPI(action, payload=null) {
-            return new Promise((resolve, reject) => {
-                if(USE_LOCAL) {
-                    setTimeout(() => {
-                        let localData = JSON.parse(localStorage.getItem('gov_db'));
-                        if (action === 'getEmployees') resolve({status:'success', data: localData});
-                        else if (action === 'saveEmployee') {
-                            if(payload.ID) {
-                                let idx = localData.findIndex(x=>x.ID === payload.ID);
-                                if(idx>-1) {
-                                    // แก้ไขบัค: รวมข้อมูลใหม่กับข้อมูลเดิม เพื่อไม่ให้ Status หายไป
-                                    localData[idx] = { ...localData[idx], ...payload };
-                                }
-                            } else {
-                                payload.ID = Date.now().toString();
-                                payload.Status = 'รอจัดทำ';
-                                localData.push(payload);
-                            }
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success', data: {id: payload.ID}});
-                        }
-                        else if (action === 'recordPrint') {
-                            payload.forEach(r => {
-                                let idx = localData.findIndex(x=>x.ID === r.EmployeeID);
-                                if(idx>-1) localData[idx].Status = 'พิมพ์แล้ว';
-                            });
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success'});
-                        }
-                    }, 200);
+            // แสดงตัวอย่างรูปภาพเมื่อมีการเลือกไฟล์ (ใช้ FileReader เหมือน edit_profile)
+            $('#profile_image_input').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        $('#profileImagePreview').attr('src', evt.target.result);
+                        $('#profileImageName').text(file.name);
+                    };
+                    reader.readAsDataURL(file);
                 } else {
-                    fetch(GAS_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: action, payload: payload })
-                    })
-                    .then(res => res.json())
-                    .then(resolve)
-                    .catch(reject);
+                    $('#profileImagePreview').attr('src', 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128');
+                    $('#profileImageName').text('');
                 }
             });
-        }
 
-        function loadEmployees() {
-            fetchAPI('getEmployees').then(res => {
-                if(res.status === 'success') {
-                    db.employees = res.data;
-                    updateDashboard();
-                    if(!document.getElementById('sec-employees').classList.contains('hidden')) {
-                        renderEmployeeTable();
-                    }
+            $('#openRegisterModal').on('click', function(e) {
+                e.preventDefault();
+                openModal();
+            });
+
+            $('#closeModalBtn, #cancelModalBtn').on('click', function() {
+                closeModal();
+            });
+
+            $modal.on('click', function(e) {
+                if ($(e.target).is($modal)) {
+                    closeModal();
                 }
             });
-        }
 
-        function saveSystemSettings() {
-            GAS_URL = document.getElementById('set_gas_url').value.trim();
-            localStorage.setItem('GAS_URL', GAS_URL);
-            USE_LOCAL = GAS_URL === '';
-            updateConnectionStatus();
-            showToast('บันทึกการเชื่อมต่อสำเร็จ ระบบจะรีโหลด...');
-            setTimeout(()=>location.reload(), 1000);
-        }
-
-        function updateDashboard() {
-            document.getElementById('stat-total').innerText = db.employees.length;
-            document.getElementById('stat-pending').innerText = db.employees.filter(e => e.Status === 'รอจัดทำ' || e.Status === 'พร้อมพิมพ์').length;
-            document.getElementById('stat-printed').innerText = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
-            
-            let exp = 0;
-            const now = new Date();
-            db.employees.forEach(e => {
-                if(e.ExpireDate && new Date(e.ExpireDate) < now) exp++;
+            // ฟังก์ชันควบคุมการสลับแสดง/ซ่อนรหัสผ่าน (Password)
+            $('#toggleRegPassword').on('click', function() {
+                const $input = $('#reg_password');
+                const isPassword = $input.attr('type') === 'password';
+                $input.attr('type', isPassword ? 'text' : 'password');
+                $(this).html(isPassword ? eyeClosedSvg : eyeOpenSvg);
             });
-            document.getElementById('stat-expired').innerText = exp;
-        }
 
-        function renderEmployeeTable() {
-            const tbody = document.getElementById('emp-table-body');
-            const search = document.getElementById('search-input').value.toLowerCase();
-            tbody.innerHTML = '';
-            
-            db.employees.forEach(emp => {
-                const searchStr = `${emp.FirstName} ${emp.LastName} ${emp.EmployeeID} ${emp.CardNumber}`.toLowerCase();
-                if (search && !searchStr.includes(search)) return;
-
-                const statusColor = emp.Status === 'พิมพ์แล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
-
-                const tr = document.createElement('tr');
-                tr.className = 'border-b hover:bg-gray-50';
-                tr.innerHTML = `
-                    <td class="p-3 text-center"><input type="checkbox" class="emp-checkbox" value="${emp.ID}"></td>
-                    <td class="p-3"><img src="${emp.PhotoURL || 'https://placehold.co/100?text=No+Img'}" class="w-10 h-12 object-cover rounded shadow-sm"></td>
-                    <td class="p-3 font-mono text-xs">${emp.CardNumber || '-'}</td>
-                    <td class="p-3 font-semibold">${emp.Prefix||''}${emp.FirstName} ${emp.LastName}</td>
-                    <td class="p-3 text-xs">${emp.Position}<br><span class="text-gray-400">${emp.Department}</span></td>
-                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${statusColor}">${emp.Status}</span></td>
-                    <td class="p-3 text-center">
-                        <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
-                        <button onclick="previewCard(['${emp.ID}'])" class="text-gov-navy hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            // ฟังก์ชันควบคุมการสลับแสดง/ซ่อนรหัสผ่าน (Confirm Password)
+            $('#toggleConfirmPassword').on('click', function() {
+                const $input = $('#confirm_password');
+                const isPassword = $input.attr('type') === 'password';
+                $input.attr('type', isPassword ? 'text' : 'password');
+                $(this).html(isPassword ? eyeClosedSvg : eyeOpenSvg);
             });
-        }
 
-        function toggleSelectAll() {
-            const chk = document.getElementById('selectAll').checked;
-            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = chk);
-        }
+            $('#registerForm').on('submit', function(e) {
+                e.preventDefault();
 
-        function saveEmployee(e) {
-            e.preventDefault();
-            const payload = {
-                ID: document.getElementById('f_id').value,
-                CitizenID: document.getElementById('f_citizenId').value,
-                Prefix: document.getElementById('f_prefix').value,
-                FirstName: document.getElementById('f_firstName').value,
-                LastName: document.getElementById('f_lastName').value,
-                EmployeeID: document.getElementById('f_empId').value,
-                Position: document.getElementById('f_position').value,
-                Level: document.getElementById('f_level').value,
-                Department: document.getElementById('f_department').value,
-                CardNumber: document.getElementById('f_cardNum').value,
-                IssueDate: document.getElementById('f_issueDate').value,
-                ExpireDate: document.getElementById('f_expireDate').value,
-                PhotoURL: document.getElementById('f_photoURL').value
-            };
+                const password = $('#reg_password').val();
+                const confirmPassword = $('#confirm_password').val();
 
-            const btn = e.submitter;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังบันทึก';
-            btn.disabled = true;
-
-            fetchAPI('saveEmployee', payload).then(res => {
-                showToast('บันทึกข้อมูลเรียบร้อย');
-                loadEmployees();
-                nav('employees');
-            }).finally(() => {
-                btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล';
-                btn.disabled = false;
-            });
-        }
-
-        function editEmployee(id) {
-            const emp = db.employees.find(x => x.ID === id);
-            if(!emp) return;
-            
-            document.getElementById('form-title').innerText = 'แก้ไขข้อมูลเจ้าหน้าที่';
-            document.getElementById('f_id').value = emp.ID;
-            document.getElementById('f_citizenId').value = emp.CitizenID || '';
-            document.getElementById('f_prefix').value = emp.Prefix || '';
-            document.getElementById('f_firstName').value = emp.FirstName || '';
-            document.getElementById('f_lastName').value = emp.LastName || '';
-            document.getElementById('f_empId').value = emp.EmployeeID || '';
-            document.getElementById('f_position').value = emp.Position || '';
-            document.getElementById('f_level').value = emp.Level || '';
-            document.getElementById('f_department').value = emp.Department || '';
-            document.getElementById('f_cardNum').value = emp.CardNumber || '';
-            
-            const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
-            document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
-            document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
-            
-            document.getElementById('f_photoURL').value = emp.PhotoURL || '';
-            if(emp.PhotoURL) {
-                document.getElementById('f_photo_preview').src = emp.PhotoURL;
-                document.getElementById('f_photo_preview').classList.remove('hidden');
-                document.getElementById('f_photo_placeholder').classList.add('hidden');
-            }
-            
-            nav('form');
-        }
-
-        function handlePhotoUpload(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                document.getElementById('crop-image-target').src = event.target.result;
-                document.getElementById('crop-modal').classList.remove('hidden');
-                
-                if(cropper) cropper.destroy();
-                cropper = new Cropper(document.getElementById('crop-image-target'), {
-                    aspectRatio: 3 / 4,
-                    viewMode: 1
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function cancelCrop() {
-            document.getElementById('crop-modal').classList.add('hidden');
-            if(cropper) cropper.destroy();
-            document.getElementById('f_photo_input').value = '';
-        }
-
-        function confirmCrop() {
-            if(!cropper) return;
-            const canvas = cropper.getCroppedCanvas({ width: 300, height: 400 });
-            const base64Img = canvas.toDataURL('image/jpeg', 0.8);
-            
-            document.getElementById('crop-modal').classList.add('hidden');
-            document.getElementById('f_photo_preview').src = base64Img;
-            document.getElementById('f_photo_preview').classList.remove('hidden');
-            document.getElementById('f_photo_placeholder').classList.add('hidden');
-            
-            if(USE_LOCAL) {
-                document.getElementById('f_photoURL').value = base64Img;
-            } else {
-                showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
-                fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
-                    if(res.status==='success') {
-                        document.getElementById('f_photoURL').value = res.data;
-                        showToast('อัปโหลดสำเร็จ', 'success');
-                    }
-                });
-            }
-        }
-
-        function getMockEmp() {
-            return {
-                PhotoURL: 'https://placehold.co/300x400/ccc/666?text=Photo',
-                CitizenID: '1-2345-67890-12-3', Prefix: 'นาย', FirstName: 'ตัวอย่าง', LastName: 'ทดสอบ',
-                Position: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', CardNumber: 'TEST-001',
-                IssueDate: '2026-08-01', ExpireDate: '2031-08-01', EmployeeID: 'EMP999'
-            };
-        }
-
-        function buildTemplateConfigUI() {
-            const p = document.getElementById('config-panel');
-            p.innerHTML = '';
-            
-            const createGroup = (title, keys) => {
-                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200"><h4 class="font-semibold text-gov-blue mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
-                keys.forEach(k => {
-                    html += `<div><label class="block text-xs text-gray-500">${k.label}</label>
-                             <input type="number" step="0.1" id="cfg_${k.id}" value="${tplConfig[k.id]}" oninput="updateConfigLive()" class="w-full border rounded px-2 py-1 text-sm"></div>`;
-                });
-                html += `</div></div>`;
-                p.innerHTML += html;
-            }
-
-            createGroup('รูปถ่าย (ซ้าย: X, บน: Y, กว้าง: W, สูง: H)', [
-                {id: 'photoX', label: 'แกน X (%)'}, {id: 'photoY', label: 'แกน Y (%)'},
-                {id: 'photoW', label: 'ความกว้าง (%)'}, {id: 'photoH', label: 'ความสูง (%)'}
-            ]);
-            createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
-            createGroup('เลขที่บัตร (ด้านหลัง)', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
-            createGroup('วันที่ออก-หมดอายุ', [{id:'issueDateX', label:'ออกบัตร X'}, {id:'expireDateX', label:'หมดอายุ X'}, {id:'issueDateY', label:'แกน Y'}, {id:'dateSize', label:'ขนาด Font (vw)'}]);
-            createGroup('QR Code', [{id:'qrX', label:'แกน X (%)'}, {id:'qrY', label:'แกน Y (%)'}, {id:'qrSize', label:'ขนาด (%)'}]);
-        }
-
-        function updateConfigLive() {
-            for(let key in tplConfig) {
-                let el = document.getElementById(`cfg_${key}`);
-                if(el) tplConfig[key] = parseFloat(el.value);
-            }
-            renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
-        }
-
-        function saveTemplateSettings() {
-            localStorage.setItem('gov_tpl_config', JSON.stringify(tplConfig));
-            showToast('บันทึกตำแหน่ง Template สำเร็จ');
-            if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
-        }
-
-        function renderPreviewBoard(emp, targetContainerId) {
-            const container = document.getElementById(targetContainerId);
-            if(!container) return;
-
-            const formatThaiDate = (dStr) => {
-                if(!dStr) return '-';
-                const d = new Date(dStr);
-                const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-                return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
-            };
-
-            let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
-            
-            html += `<div class="overlay-photo" style="left:${tplConfig.photoX}%; top:${tplConfig.photoY}%; width:${tplConfig.photoW}%; height:${tplConfig.photoH}%; background-image: url('${emp.PhotoURL}');"></div>`;
-            
-            const createTxt = (id, text, x, y, size, fw='normal') => {
-                return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw};">${text}</div>`;
-            };
-
-            html += createTxt('citizenId', (emp.CitizenID||'-').split('').join(' '), tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, 'bold');
-            html += createTxt('name', `${emp.Prefix||''}${emp.FirstName||''}  ${emp.LastName||''}`, tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, 'bold');
-            html += createTxt('position', emp.Position||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize);
-            
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize);
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY, tplConfig.dateSize);
-
-            html += `<div id="${targetContainerId}_qr" class="overlay-qr" style="left:${tplConfig.qrX}%; top:${tplConfig.qrY}%; width:${tplConfig.qrSize}%; aspect-ratio: 1/1;"></div>`;
-
-            container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
-
-            setTimeout(() => {
-                const qrEl = document.getElementById(`${targetContainerId}_qr`);
-                if(qrEl) {
-                    qrEl.innerHTML = '';
-                    new QRCode(qrEl, {
-                        text: `Verify: ${emp.EmployeeID} / ${emp.CardNumber}`,
-                        width: qrEl.offsetWidth,
-                        height: qrEl.offsetHeight,
-                        colorDark : "#0f172a",
-                        colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.M
+                if (password !== confirmPassword) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'รหัสผ่านไม่ตรงกัน',
+                        text: 'กรุณากรอกรหัสผ่านและการยืนยันรหัสผ่านให้ตรงกัน',
+                        confirmButtonColor: '#2563eb'
                     });
-                }
-            }, 50);
-        }
-
-        function prepareBatchPrint() {
-            const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
-            if(checked.length === 0) {
-                showToast('กรุณาเลือกเจ้าหน้าที่อย่างน้อย 1 รายการ', 'error');
-                return;
-            }
-            previewCard(checked);
-        }
-
-        function previewCard(empIds) {
-            currentPrintList = [];
-            const printPreviewContainer = document.getElementById('print-preview-container');
-            printPreviewContainer.innerHTML = '';
-
-            empIds.forEach((id, idx) => {
-                const emp = db.employees.find(x => x.ID === id);
-                if(!emp) return;
-                
-                if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
-                    showToast(`ข้อมูลของ ${emp.FirstName} ไม่ครบถ้วน (ต้องมีรูป/เลขบัตร)`, 'error');
                     return;
                 }
 
-                currentPrintList.push(emp);
-                
-                const cardDiv = document.createElement('div');
-                const uuid = 'prev_' + Math.random().toString(36).substring(7);
-                cardDiv.id = uuid;
-                cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
-                printPreviewContainer.appendChild(cardDiv);
-                
-                renderPreviewBoard(emp, uuid);
-            });
-
-            if(currentPrintList.length > 0) {
-                nav('print-preview');
-            }
-        }
-
-        function executePrint() {
-            if(currentPrintList.length === 0) return;
-
-            const printSection = document.getElementById('print-section');
-            printSection.innerHTML = '';
-
-            currentPrintList.forEach(emp => {
-                const cardDiv = document.createElement('div');
-                const uuid = 'print_' + Math.random().toString(36).substring(7);
-                cardDiv.id = uuid;
-                cardDiv.className = 'print-card-wrapper';
-                printSection.appendChild(cardDiv);
-                
-                renderPreviewBoard(emp, uuid);
-            });
-
-            setTimeout(() => {
-                window.print();
-                
-                if(confirm('การพิมพ์เสร็จสิ้นและสมบูรณ์หรือไม่? (กด OK เพื่อบันทึกประวัติการพิมพ์)')) {
-                    const printPayload = currentPrintList.map(e => ({ EmployeeID: e.ID, CardNumber: e.CardNumber, EmployeeName: `${e.FirstName} ${e.LastName}` }));
-                    fetchAPI('recordPrint', printPayload).then(() => {
-                        showToast('บันทึกประวัติการพิมพ์สำเร็จ', 'success');
-                        loadEmployees(); 
+                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+                if (!passwordRegex.test(password)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'รหัสผ่านไม่ปลอดภัย',
+                        text: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข',
+                        confirmButtonColor: '#2563eb'
                     });
+                    return;
                 }
-            }, 500);
-        }
-function editEmployee(id) {
-    if (!db.employees || db.employees.length === 0) {
-        showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
-        return;
-    }
-    // ใช้ String() เพื่อป้องกันปัญหาชนิดข้อมูล ID ไม่ตรงกัน (String vs Number)
-    const emp = db.employees.find(x => String(x.ID) === String(id));
-    if(!emp) {
-        showToast('ไม่พบข้อมูลเจ้าหน้าที่รายนี้', 'error');
-        return;
-    }
-    
-    document.getElementById('form-title').innerText = 'แก้ไขข้อมูลเจ้าหน้าที่';
-    document.getElementById('f_id').value = emp.ID;
-    document.getElementById('f_citizenId').value = emp.CitizenID || '';
-    document.getElementById('f_prefix').value = emp.Prefix || '';
-    document.getElementById('f_firstName').value = emp.FirstName || '';
-    document.getElementById('f_lastName').value = emp.LastName || '';
-    document.getElementById('f_empId').value = emp.EmployeeID || '';
-    document.getElementById('f_position').value = emp.Position || '';
-    document.getElementById('f_level').value = emp.Level || '';
-    document.getElementById('f_department').value = emp.Department || '';
-    document.getElementById('f_cardNum').value = emp.CardNumber || '';
-    
-    const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
-    document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
-    document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
-    
-    document.getElementById('f_photoURL').value = emp.PhotoURL || '';
-    if(emp.PhotoURL) {
-        document.getElementById('f_photo_preview').src = emp.PhotoURL;
-        document.getElementById('f_photo_preview').classList.remove('hidden');
-        document.getElementById('f_photo_placeholder').classList.add('hidden');
-    }
-    
-    nav('form');
-}
-      function previewCard(empIds) {
-    if (!db.employees || db.employees.length === 0) {
-        showToast('ยังไม่มีข้อมูลในระบบ', 'error');
-        return;
-    }
-    
-    currentPrintList = [];
-    const printPreviewContainer = document.getElementById('print-preview-container');
-    printPreviewContainer.innerHTML = '';
 
-    empIds.forEach((id) => {
-        const emp = db.employees.find(x => String(x.ID) === String(id));
-        if(!emp) return;
-        
-        if(!emp.PhotoURL || !emp.CardNumber || !emp.FirstName) {
-            showToast(`ข้อมูลของ ${emp.FirstName || id} ไม่ครบถ้วน (ต้องมีรูป, เลขที่บัตร และชื่อ)`, 'error');
-            return;
-        }
+                const formData = new FormData(this);
 
-        currentPrintList.push(emp);
-        
-        const cardDiv = document.createElement('div');
-        const uuid = 'prev_' + Math.random().toString(36).substring(7);
-        cardDiv.id = uuid;
-        cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
-        printPreviewContainer.appendChild(cardDiv);
-        
-        renderPreviewBoard(emp, uuid);
-    });
-
-    if(currentPrintList.length > 0) {
-        nav('print-preview');
-    }
-}  
-function confirmCrop() {
-    if(!cropper) return;
-    const canvas = cropper.getCroppedCanvas({ width: 300, height: 400 });
-    const base64Img = canvas.toDataURL('image/jpeg', 0.8);
-    
-    document.getElementById('crop-modal').classList.add('hidden');
-    document.getElementById('f_photo_preview').src = base64Img;
-    document.getElementById('f_photo_preview').classList.remove('hidden');
-    document.getElementById('f_photo_placeholder').classList.add('hidden');
-    
-    if(USE_LOCAL) {
-        document.getElementById('f_photoURL').value = base64Img;
-    } else {
-        showToast('กำลังอัปโหลดรูปภาพขึ้น Google Drive...');
-        const saveBtn = document.querySelector('#emp-form button[type="submit"]');
-        saveBtn.disabled = true; // ล็อกปุ่มบันทึกป้องกันกดก่อนอัปโหลดเสร็จ
-        
-        fetchAPI('uploadPhoto', { base64: base64Img, filename: `photo_${Date.now()}.jpg` }).then(res => {
-            if(res.status==='success') {
-                document.getElementById('f_photoURL').value = res.data;
-                showToast('อัปโหลดสำเร็จ', 'success');
-            } else {
-                showToast('อัปโหลดรูปไม่สำเร็จ: ' + res.message, 'error');
-            }
-        }).catch(err => {
-            showToast('เกิดข้อผิดพลาดในการอัปโหลดรูป', 'error');
-        }).finally(() => {
-            saveBtn.disabled = false; // ปลดล็อกปุ่ม
+                $.ajax({
+                    url: '',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'ลงทะเบียนสำเร็จ!',
+                                text: response.message,
+                                confirmButtonColor: '#2563eb'
+                            }).then(() => {
+                                closeModal();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด',
+                                text: response.message,
+                                confirmButtonColor: '#2563eb'
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX Error Response:", xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'ข้อผิดพลาดระบบ',
+                            text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง (ตรวจสอบ Console เพื่อดูรายละเอียด Error ทางฝั่ง PHP)',
+                            confirmButtonColor: '#2563eb'
+                        });
+                    }
+                });
+            });
         });
-    }
-}
     </script>
 </body>
 </html>
