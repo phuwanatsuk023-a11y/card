@@ -915,7 +915,7 @@
 
             const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
             const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
-            const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` จ.${agencySettings.province}` : '');
+            const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
 
             html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, 'bold');
             html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize);
