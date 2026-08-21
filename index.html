@@ -249,8 +249,11 @@
         </div>
     </div>
 
-    <!-- JavaScript สำหรับควบคุมการทำงานและเชื่อมต่อ Google Apps Script -->
+   <!-- JavaScript สำหรับควบคุมการทำงานและเชื่อมต่อ Google Apps Script ผ่าน API -->
     <script>
+        // 🛑 กรุณานำ URL ที่ได้จากการ Deploy Web App ของ Google Apps Script มาใส่ตรงนี้
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
         let profileBase64Data = '';
 
         $(document).ready(function() {
@@ -276,7 +279,7 @@
             });
 
             // -----------------------------------------------------------
-            // 1. ระบบจัดการฟอร์มเข้าสู่ระบบ (LOGIN PROCESS - GOOGLE SHEET ONLY)
+            // 1. ระบบจัดการฟอร์มเข้าสู่ระบบ (LOGIN PROCESS VIA API)
             // -----------------------------------------------------------
             $('#loginForm').on('submit', function(e) {
                 e.preventDefault();
@@ -294,64 +297,57 @@
                     return;
                 }
 
-                // ตรวจสอบว่าถูกรันในสภาพแวดล้อม Google Apps Script หรือไม่
-                if (typeof google === 'undefined' || !google.script || !google.script.run) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'ไม่สามารถเชื่อมต่อได้',
-                        text: 'ระบบนี้ต้องเปิดใช้งานผ่าน Google Apps Script Web App เท่านั้น ไม่รองรับการเปิดไฟล์ HTML โดยตรง',
-                        confirmButtonColor: '#2563eb'
-                    });
-                    return;
-                }
-
-                // แสดง Loading ระหว่างดึงข้อมูลจาก Google Sheet
                 Swal.fire({
                     title: 'กำลังเข้าสู่ระบบ...',
-                    text: 'กำลังตรวจสอบข้อมูลกับ Google Sheets',
+                    text: 'กำลังตรวจสอบข้อมูลกับเซิร์ฟเวอร์',
                     allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    didOpen: () => { Swal.showLoading(); }
                 });
 
-                // ตรวจสอบข้อมูลกับ Code.gs -> Google Sheet จริง
-                google.script.run
-                    .withSuccessHandler(function(response) {
-                        if (response && response.success) {
-                            sessionStorage.setItem('currentUser', JSON.stringify(response.user));
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'เข้าสู่ระบบสำเร็จ!',
-                                text: 'ยินดีต้อนรับ ' + (response.user.firstname || username),
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.href = 'list.html';
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'เข้าสู่ระบบไม่สำเร็จ',
-                                text: response ? response.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
-                                confirmButtonColor: '#2563eb'
-                            });
-                        }
+                // ส่ง Request ไปยัง Google Apps Script Web App
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'login',
+                        data: { username: username, password: password }
                     })
-                    .withFailureHandler(function(error) {
+                })
+                .then(response => response.json())
+                .then(response => {
+                    if (response && response.success) {
+                        sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'เข้าสู่ระบบสำเร็จ!',
+                            text: 'ยินดีต้อนรับ ' + (response.user.firstname || username),
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = 'list.html';
+                        });
+                    } else {
                         Swal.fire({
                             icon: 'error',
-                            title: 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์',
-                            text: error.message || 'ไม่สามารถติดต่อ Google Apps Script ได้',
+                            title: 'เข้าสู่ระบบไม่สำเร็จ',
+                            text: response ? response.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
                             confirmButtonColor: '#2563eb'
                         });
-                    })
-                    .checkLogin(username, password);
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
+                        text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: ' + error.message,
+                        confirmButtonColor: '#2563eb'
+                    });
+                });
             });
 
             // -----------------------------------------------------------
-            // 2. ระบบ Modal การลงทะเบียนใช้งาน (REGISTER PROCESS)
+            // 2. ระบบ Modal และลงทะเบียนใช้งาน (REGISTER PROCESS VIA API)
             // -----------------------------------------------------------
             function openModal() {
                 $modal.removeClass('hidden');
@@ -374,7 +370,7 @@
                 }, 300);
             }
 
-            // แสดงรูปภาพตัวอย่างและแปลงรูปเป็น Base64
+            // แสดงรูปภาพตัวอย่างและแปลงเป็น Base64
             $('#profile_image_input').on('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
@@ -418,7 +414,7 @@
                 }
             });
 
-            // สลับการซ่อน/แสดง Password
+            // สลับเปิด/ปิด รหัสผ่าน
             $('#toggleRegPassword').on('click', function() {
                 const $input = $('#reg_password');
                 const isPassword = $input.attr('type') === 'password';
@@ -433,7 +429,7 @@
                 $(this).html(isPassword ? eyeClosedSvg : eyeOpenSvg);
             });
 
-            // ส่งข้อมูลการสมัครสมาชิก
+            // ส่งข้อมูลสมัครสมาชิก
             $('#registerForm').on('submit', function(e) {
                 e.preventDefault();
 
@@ -461,16 +457,6 @@
                     return;
                 }
 
-                if (typeof google === 'undefined' || !google.script || !google.script.run) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'ไม่สามารถเชื่อมต่อได้',
-                        text: 'ระบบนี้ต้องเปิดใช้งานผ่าน Google Apps Script Web App เท่านั้น',
-                        confirmButtonColor: '#2563eb'
-                    });
-                    return;
-                }
-
                 const formData = {
                     firstname: $('#reg_firstname').val().trim(),
                     lastname: $('#reg_lastname').val().trim(),
@@ -491,35 +477,43 @@
                     didOpen: () => Swal.showLoading()
                 });
 
-                google.script.run
-                    .withSuccessHandler(function(response) {
-                        if (response && response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'ลงทะเบียนสำเร็จ!',
-                                text: response.message,
-                                confirmButtonColor: '#2563eb'
-                            }).then(() => {
-                                closeModal();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'เกิดข้อผิดพลาด',
-                                text: response ? response.message : 'ไม่สามารถลงทะเบียนได้',
-                                confirmButtonColor: '#2563eb'
-                            });
-                        }
+                // ส่งข้อมูลไปยัง Google Apps Script Web App
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'register',
+                        data: formData
                     })
-                    .withFailureHandler(function(error) {
+                })
+                .then(response => response.json())
+                .then(response => {
+                    if (response && response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'ลงทะเบียนสำเร็จ!',
+                            text: response.message,
+                            confirmButtonColor: '#2563eb'
+                        }).then(() => {
+                            closeModal();
+                        });
+                    } else {
                         Swal.fire({
                             icon: 'error',
-                            title: 'เกิดข้อผิดพลาดระบบ',
-                            text: error.message,
+                            title: 'เกิดข้อผิดพลาด',
+                            text: response ? response.message : 'ไม่สามารถลงทะเบียนได้',
                             confirmButtonColor: '#2563eb'
                         });
-                    })
-                    .registerUser(formData);
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาดระบบ',
+                        text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: ' + error.message,
+                        confirmButtonColor: '#2563eb'
+                    });
+                });
             });
         });
     </script>
