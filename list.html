@@ -333,7 +333,7 @@
                                     <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white cursor-pointer">
                                 </div>
                                 <div>
-                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-xs text-gray-400">(คำนวณ +6 ปี -1 วัน อัตโนมัติ)</span></label>
+                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-xs text-gray-400"></span></label>
                                     <input type="text" id="f_expireDate" required placeholder="คำนวณอัตโนมัติ" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed focus:outline-none">
                                 </div>
                             </div>
@@ -636,7 +636,7 @@
             for (let y = endYearAD; y >= startYearAD; y--) {
                 const opt = document.createElement('option');
                 opt.value = y;
-                opt.textContent = `พ.ศ. ${y + 543}`;
+                opt.textContent = ` ${y + 543}`;
                 if (y === currentAD) opt.selected = true;
                 select.appendChild(opt);
             }
