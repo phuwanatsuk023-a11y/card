@@ -45,6 +45,11 @@
     <!-- Icons (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Flatpickr (Thai Calendar Support) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
     <style>
         @media print {
             body { background: white; margin: 0; padding: 0; }
@@ -96,7 +101,7 @@
     <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
         <div class="px-6 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-building-columns text-gov-gold text-2xl"></i>
+                <img id="header-logo" src="" alt="Logo" class="w-10 h-10 object-contain rounded bg-white p-1 shadow-sm">
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
                     <p class="text-xs text-gray-300" id="header-org-name"></p>
@@ -104,10 +109,10 @@
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold">นายภูวนาท สุขประเสริฐ</p>
-                    <p class="text-xs text-gray-300">ผู้พัฒนาระบบ</p>
+                    <p class="font-semibold" id="header-user-name">ผู้ใช้งานระบบ</p>
+                    <p class="text-xs text-gray-300" id="header-user-role">เจ้าหน้าที่</p>
                 </div>
-                <img src="profile_1_1786452882.png" alt="User Profile" class="w-12 h-12 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
+                <img id="header-user-avatar" src="profile_1_1786452882.png" alt="User Profile" class="w-11 h-11 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
                 <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
                     <i class="fa-solid fa-right-from-bracket text-xl"></i>
                 </button>
@@ -141,8 +146,13 @@
                 </a>
                 
             </nav>
-            <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-400">
-                GovCard Pro v1.0<br>Status: <span id="conn-status" class="text-green-500 font-bold">Local Storage</span>
+            <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
+                <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-gov-gold shadow-sm">
+                <div>
+                    <p class="font-semibold text-gray-800 text-sm">นายภูวนาท สุขประเสริฐ</p>
+                    <p class="text-xs text-gray-500">ผู้พัฒนาระบบ</p>
+                </div>
+                <div class="mt-1 font-bold text-gray-400 text-[11px] tracking-wider uppercase">GovCard Pro v1.0</div>
             </div>
         </aside>
 
@@ -320,11 +330,11 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร <span class="text-red-500">*</span></label>
-                                    <input type="date" id="f_issueDate" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white">
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-red-500">*</span></label>
-                                    <input type="date" id="f_expireDate" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-gray-50">
+                                    <input type="text" id="f_expireDate" required placeholder="เลือกวันที่บัตรหมดอายุ" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white">
                                 </div>
                             </div>
                         </div>
@@ -385,7 +395,10 @@
                             </div>
                         </div>
 
-                        <div class="mt-8 pt-4 border-t flex justify-end">
+                        <div class="mt-8 pt-4 border-t flex justify-end gap-3">
+                            <button type="button" onclick="resetAgencySettings()" class="px-4 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-100 text-sm font-medium">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> รีเซ็ตค่าเริ่มต้น
+                            </button>
                             <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md text-sm font-medium">
                                 <i class="fa-solid fa-save mr-1"></i> บันทึกการตั้งค่า
                             </button>
@@ -476,8 +489,7 @@
             positionX: 17, positionY: 43, positionSize: 1.4,
             bloodTypeX: 17, bloodTypeY: 52, bloodTypeSize: 1.3,
             cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
-            issueDateX: 62, issueDateY: 78, dateSize: 1.2,
-            expireDateX: 85, expireDateY: 78,
+            issueDateX: 62, issueDateY: 78, expireDateX: 85, expireDateY: 78, dateSize: 1.2,
             headNameX: 65, headNameY: 30, headNameSize: 1.4,
             headPositionX: 65, headPositionY: 38, headPositionSize: 1.2,
             agencyProvinceX: 65, agencyProvinceY: 46, agencyProvinceSize: 1.3,
@@ -490,25 +502,92 @@
         }
 
         let currentPrintList = [];
+        let issuePicker = null, expirePicker = null;
+
+        const defaultLogoSVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%231d4ed8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>';
 
         window.onload = () => {
             document.getElementById('set_gas_url').value = GAS_URL;
-            updateConnectionStatus();
+            loadCurrentUserInfo();
             loadEmployees();
             loadAgencySettings();
             nav('dashboard');
             buildTemplateConfigUI();
             initFormListeners();
+            initFlatpickr();
         };
 
-        function updateConnectionStatus() {
-            const st = document.getElementById('conn-status');
-            if(USE_LOCAL) {
-                st.innerText = 'Local Storage (Demo Mode)';
-                st.className = 'text-yellow-500 font-bold';
-            } else {
-                st.innerText = 'Connected (Google Sheets)';
-                st.className = 'text-green-500 font-bold';
+        function loadCurrentUserInfo() {
+            const rawUser = sessionStorage.getItem('currentUser');
+            let user = { name: 'นายภูวนาท สุขประเสริฐ', role: 'ผู้พัฒนาระบบ', avatar: 'profile_1_1786452882.png' };
+            if (rawUser) {
+                try {
+                    const parsed = JSON.parse(rawUser);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        user = { ...user, ...parsed };
+                    } else {
+                        user.name = rawUser;
+                    }
+                } catch(e) {
+                    user.name = rawUser;
+                }
+            }
+            document.getElementById('header-user-name').innerText = user.name || 'ผู้ใช้งานระบบ';
+            document.getElementById('header-user-role').innerText = user.role || 'เจ้าหน้าที่';
+            if (user.avatar) {
+                document.getElementById('header-user-avatar').src = user.avatar;
+            }
+        }
+
+        function initFlatpickr() {
+            if (typeof flatpickr === 'undefined') return;
+
+            flatpickr.localize(flatpickr.l10ns.th);
+
+            const commonConfig = {
+                locale: 'th',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'j F Y',
+                onReady: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onValueUpdate: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onMonthChange: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onYearChange: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onOpen: (selectedDates, dateStr, instance) => formatBuddhistYear(instance)
+            };
+
+            issuePicker = flatpickr('#f_issueDate', {
+                ...commonConfig,
+                onChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    if (selectedDates[0]) {
+                        const expD = new Date(selectedDates[0]);
+                        expD.setFullYear(expD.getFullYear() + 6);
+                        if (expirePicker) {
+                            const expStr = expD.toISOString().split('T')[0];
+                            expirePicker.setDate(expStr, true);
+                        }
+                    }
+                }
+            });
+
+            expirePicker = flatpickr('#f_expireDate', {
+                ...commonConfig,
+                onChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                }
+            });
+        }
+
+        function formatBuddhistYear(instance) {
+            if (!instance || !instance.altInput) return;
+            if (instance.selectedDates.length > 0) {
+                const date = instance.selectedDates[0];
+                const day = date.getDate();
+                const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                const month = monthNames[date.getMonth()];
+                const yearBE = date.getFullYear() + 543;
+                instance.altInput.value = `${day} ${month} พ.ศ. ${yearBE}`;
             }
         }
 
@@ -549,8 +628,8 @@
             expireDate.setFullYear(expireDate.getFullYear() + 6);
             const expireStr = expireDate.toISOString().split('T')[0];
 
-            document.getElementById('f_issueDate').value = issueStr;
-            document.getElementById('f_expireDate').value = expireStr;
+            if (issuePicker) issuePicker.setDate(issueStr, true);
+            if (expirePicker) expirePicker.setDate(expireStr, true);
 
             nav('form');
         }
@@ -660,10 +739,16 @@
             document.getElementById('f_province').value = agencySettings.province || '';
             document.getElementById('f_agency_logo').value = agencySettings.agency_logo || '';
 
+            const headerLogo = document.getElementById('header-logo');
             if(agencySettings.agency_logo) {
                 document.getElementById('agency_logo_preview').src = agencySettings.agency_logo;
                 document.getElementById('agency_logo_preview').classList.remove('hidden');
                 document.getElementById('agency_logo_placeholder').classList.add('hidden');
+                headerLogo.src = agencySettings.agency_logo;
+            } else {
+                document.getElementById('agency_logo_preview').classList.add('hidden');
+                document.getElementById('agency_logo_placeholder').classList.remove('hidden');
+                headerLogo.src = defaultLogoSVG;
             }
 
             if(agencySettings.agency_name) {
@@ -709,11 +794,24 @@
             });
         }
 
+        function resetAgencySettings() {
+            if(!confirm('คุณต้องการรีเซ็ตค่าการตั้งค่าหน่วยงานเป็นค่าเริ่มต้นใช่หรือไม่?')) return;
+            agencySettings = {
+                head_name: 'นายสมศักดิ์ รักชาติ', 
+                head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
+                agency_name: 'เทศบาลตำบลตัวอย่าง', 
+                province: 'จังหวัดตัวอย่าง', 
+                agency_logo: '' 
+            };
+            applyAgencySettingsUI();
+            saveAgencySettings();
+            showToast('รีเซ็ตการตั้งค่าหน่วยงานสำเร็จ', 'success');
+        }
+
         function saveSystemSettings() {
             GAS_URL = document.getElementById('set_gas_url').value.trim();
             localStorage.setItem('GAS_URL', GAS_URL);
             USE_LOCAL = GAS_URL === '';
-            updateConnectionStatus();
             showToast('บันทึกการเชื่อมต่อสำเร็จ ระบบจะรีโหลด...');
             setTimeout(()=>location.reload(), 1000);
         }
@@ -821,8 +919,8 @@
             document.getElementById('f_cardNum').value = emp.CardNumber || '';
             
             const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
-            document.getElementById('f_issueDate').value = formatD(emp.IssueDate);
-            document.getElementById('f_expireDate').value = formatD(emp.ExpireDate);
+            if (issuePicker) issuePicker.setDate(formatD(emp.IssueDate), true);
+            if (expirePicker) expirePicker.setDate(formatD(emp.ExpireDate), true);
             
             toggleExecutiveField();
             nav('form');
@@ -856,7 +954,11 @@
             createGroup('ประเภทพนักงาน', [{id:'positionTypeX', label:'แกน X (%)'}, {id:'positionTypeY', label:'แกน Y (%)'}, {id:'positionTypeSize', label:'ขนาด Font (vw)'}]);
             createGroup('หมู่โลหิต', [{id:'bloodTypeX', label:'แกน X (%)'}, {id:'bloodTypeY', label:'แกน Y (%)'}, {id:'bloodTypeSize', label:'ขนาด Font (vw)'}]);
             createGroup('เลขที่บัตร', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
-            createGroup('วันที่ออก-หมดอายุ', [{id:'issueDateX', label:'ออกบัตร X'}, {id:'expireDateX', label:'หมดอายุ X'}, {id:'issueDateY', label:'แกน Y'}, {id:'dateSize', label:'ขนาด Font (vw)'}]);
+            createGroup('วันที่ออก-หมดอายุ', [
+                {id:'issueDateX', label:'ออกบัตร X (%)'}, {id:'issueDateY', label:'ออกบัตร Y (%)'},
+                {id:'expireDateX', label:'หมดอายุ X (%)'}, {id:'expireDateY', label:'หมดอายุ Y (%)'},
+                {id:'dateSize', label:'ขนาด Font (vw)'}
+            ]);
             
             createGroup('ชื่อนายก อปท. (ตั้งค่าหน่วยงาน)', [{id:'headNameX', label:'แกน X (%)'}, {id:'headNameY', label:'แกน Y (%)'}, {id:'headNameSize', label:'ขนาด Font (vw)'}]);
             createGroup('ตำแหน่งนายก อปท.', [{id:'headPositionX', label:'แกน X (%)'}, {id:'headPositionY', label:'แกน Y (%)'}, {id:'headPositionSize', label:'ขนาด Font (vw)'}]);
@@ -891,33 +993,33 @@
 
             let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
             
-            const createTxt = (id, text, x, y, size, fw='normal') => {
+            const createTxt = (id, text, x, y, size, fw='400') => {
                 return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
             };
 
             const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
 
-            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, 'bold');
-            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, 'bold');
-            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize);
+            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '700');
+            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '700');
+            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '400');
             
             const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
-            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize);
+            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '400');
             
             const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
-            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize);
+            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '400');
 
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize);
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize);
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY, tplConfig.dateSize);
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '400');
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '400');
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '400');
 
             const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
             const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
             const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
 
-            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, 'bold');
-            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize);
-            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, 'bold');
+            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '700');
+            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '400');
+            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '600');
 
             container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
         }
@@ -993,7 +1095,6 @@
         function initFormListeners() {
             const positionInput = document.getElementById('f_positionName');
             const citizenIdInput = document.getElementById('f_citizenId');
-            const issueDateInput = document.getElementById('f_issueDate');
 
             if (positionInput) {
                 positionInput.addEventListener('input', toggleExecutiveField);
@@ -1002,19 +1103,6 @@
             if (citizenIdInput) {
                 citizenIdInput.addEventListener('input', function() {
                     this.value = formatCitizenId(this.value);
-                });
-            }
-
-            if (issueDateInput) {
-                issueDateInput.addEventListener('change', function() {
-                    if (this.value) {
-                        const issueD = new Date(this.value);
-                        if (!isNaN(issueD.getTime())) {
-                            const expD = new Date(issueD);
-                            expD.setFullYear(expD.getFullYear() + 6);
-                            document.getElementById('f_expireDate').value = expD.toISOString().split('T')[0];
-                        }
-                    }
                 });
             }
         }
