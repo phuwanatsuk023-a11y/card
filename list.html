@@ -98,7 +98,6 @@
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
 
-    <!-- Header Bar -->
     <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
         <div class="px-6 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -110,8 +109,8 @@
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูลจาก Google Sheet...</p>
-                    <p class="text-xs text-gray-300" id="header-user-role">-</p>
+                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูล...</p>
+                    <p class="text-xs text-gray-300" id="header-user-role">เจ้าหน้าที่</p>
                 </div>
                 <img id="header-user-avatar" src="profile_1_1786452882.png" alt="User Profile" class="w-11 h-11 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
                 <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
@@ -123,7 +122,6 @@
 
     <div id="app-container" class="flex flex-1 overflow-hidden">
         
-        <!-- Sidebar Navigation -->
         <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
             <nav class="flex-1 py-4 flex flex-col gap-1">
                 <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
@@ -140,17 +138,13 @@
                 </a>
                 <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>ประวัติการพิมพ์</span>
-                </a>
+            </a>
                 <div class="my-2 border-t border-gray-100"></div>
                 <p class="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ตั้งค่าระบบ</p>
                 <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-id-card-clip w-5"></i> <span>ตั้งค่า Template บัตร</span>
                 </a>
                 
-                <!-- เมนูตั้งค่าบัญชี (แสดงเฉพาะ Role: admin) -->
-                <a href="#" id="menu-account-settings" onclick="nav('account-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors hidden">
-                    <i class="fa-solid fa-user-gear w-5"></i> <span>ตั้งค่าบัญชี</span>
-                </a>
             </nav>
             <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
                 <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-gov-gold shadow-sm">
@@ -162,10 +156,8 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <main id="content" class="flex-1 bg-gray-50 overflow-y-auto p-6 relative">
             
-            <!-- Dashboard Section -->
             <section id="sec-dashboard" class="view-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ภาพรวมระบบ (Dashboard)</h2>
@@ -216,7 +208,6 @@
                 </div>
             </section>
 
-            <!-- Employees Table Section -->
             <section id="sec-employees" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ข้อมูลเจ้าหน้าที่</h2>
@@ -280,17 +271,9 @@
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                <!-- ส่วนราชการ พร้อมปุ่ม + Modal -->
                                 <div>
                                     <label for="f_schoolAffiliation" class="block text-sm font-medium text-gray-700 mb-1">ส่วนราชการ <span class="text-red-500">*</span></label>
-                                    <div class="flex gap-2">
-                                        <select id="f_schoolAffiliation" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
-                                            <option value="">--- เลือกส่วนราชการ ---</option>
-                                        </select>
-                                        <button type="button" onclick="openMasterModal('affiliation')" class="bg-gov-blue text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors" title="จัดการส่วนราชการ">
-                                            <i class="fa-solid fa-plus"></i>
-                                        </button>
-                                    </div>
+                                    <input type="text" id="f_schoolAffiliation" required placeholder="เช่น สำนักพุทธศาสนา / กองช่าง" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
                                 </div>
                                 <div>
                                     <label for="f_positionName" class="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง <span class="text-red-500">*</span></label>
@@ -306,17 +289,14 @@
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <!-- ประเภทพนักงาน พร้อมปุ่ม + Modal -->
                                 <div>
                                     <label for="f_positionType" class="block text-sm font-medium text-gray-700 mb-1">ประเภทพนักงาน <span class="text-red-500">*</span></label>
-                                    <div class="flex gap-2">
-                                        <select id="f_positionType" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
-                                            <option value="">--- เลือกประเภทพนักงาน ---</option>
-                                        </select>
-                                        <button type="button" onclick="openMasterModal('positionType')" class="bg-gov-blue text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors" title="จัดการประเภทพนักงาน">
-                                            <i class="fa-solid fa-plus"></i>
-                                        </button>
-                                    </div>
+                                    <select id="f_positionType" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                        <option value="">--- เลือกประเภทพนักงาน ---</option>
+                                        <option value="พนักงานเทศบาล">พนักงานเทศบาล</option>
+                                        <option value="พนักงานครูและบุคลากรทางการศึกษา">พนักงานครูและบุคลากรทางการศึกษา</option>
+                                        <option value="พนักงานสถานธนานุบาล">พนักงานสถานธนานุบาล</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label for="f_gender" class="block text-sm font-medium text-gray-700 mb-1">เพศ <span class="text-red-500">*</span></label>
@@ -449,48 +429,6 @@
                 </div>
             </section>
 
-            <!-- Section: ตั้งค่าบัญชีผู้ใช้ (เฉพาะ Admin) -->
-            <section id="sec-account-settings" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-user-gear mr-2"></i>ตั้งค่าบัญชีผู้ใช้งาน (Google Sheet Users)</h2>
-                    <div class="flex gap-4 items-center">
-                        <!-- ปุ่มเปิดปิดระบบ -->
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="system-toggle-btn" class="sr-only peer" onchange="toggleSystemStatus(this)">
-                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                            <span class="ms-3 text-sm font-medium text-gray-700" id="system-toggle-label">กำลังตรวจสอบสถานะ...</span>
-                        </label>
-                        <button onclick="loadUsersList()" class="bg-gov-blue text-white px-4 py-2 rounded hover:bg-blue-800 text-sm">
-                            <i class="fa-solid fa-rotate mr-1"></i> โหลดข้อมูลใหม่
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-600 text-sm border-b">
-                                    <th class="p-3 text-center w-12">ID</th>
-                                    <th class="p-3">รูปภาพ</th>
-                                    <th class="p-3">ชื่อ - นามสกุล</th>
-                                    <th class="p-3">Username</th>
-                                    <th class="p-3">ตำแหน่ง / หน่วยงาน</th>
-                                    <th class="p-3 text-center">Role</th>
-                                    <th class="p-3 text-center w-36">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-table-body" class="text-sm">
-                                <tr>
-                                    <td colspan="7" class="text-center p-6 text-gray-500">กำลังโหลดข้อมูลผู้ใช้งาน...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Preview Section -->
             <section id="sec-print-preview" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6 no-print">
                     <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
@@ -504,7 +442,6 @@
                 </div>
             </section>
 
-            <!-- System Settings -->
             <section id="sec-system-settings" class="view-section hidden">
                 <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
                     <h2 class="text-xl font-bold text-gov-navy mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
@@ -521,85 +458,6 @@
         </main>
     </div>
 
-    <!-- Modal จัดการตัวเลือก (ส่วนราชการ / ประเภทพนักงาน) -->
-    <div id="modal-master-data" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div class="bg-gov-navy text-white px-6 py-4 flex justify-between items-center">
-                <h3 class="font-bold text-lg" id="modal-master-title">จัดการข้อมูล</h3>
-                <button onclick="closeMasterModal()" class="text-gray-300 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <!-- ฟอร์มเพิ่ม/แก้ไข -->
-                <div class="flex gap-2">
-                    <input type="hidden" id="master_edit_index" value="-1">
-                    <input type="text" id="master_input_val" placeholder="กรอกชื่อรายการใหม่..." class="flex-1 border rounded-lg p-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
-                    <button onclick="saveMasterItem()" class="bg-gov-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800 font-medium">
-                        <i class="fa-solid fa-plus mr-1"></i> บันทึก
-                    </button>
-                </div>
-                <!-- ตารางรายการ -->
-                <div class="max-h-60 overflow-y-auto border rounded-lg divide-y">
-                    <ul id="master_items_list" class="divide-y text-sm">
-                        <!-- รายการย่อยจะถูกแทรกที่นี่ -->
-                    </ul>
-                </div>
-            </div>
-            <div class="p-4 bg-gray-50 border-t flex justify-end">
-                <button onclick="closeMasterModal()" class="px-4 py-2 border rounded-lg text-gray-600 text-sm hover:bg-gray-100">ปิดหน้าต่าง</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal แก้ไขข้อมูลผู้ใช้งาน (Admin Edit User) -->
-    <div id="modal-edit-user" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-            <div class="bg-gov-navy text-white px-6 py-4 flex justify-between items-center">
-                <h3 class="font-bold text-lg"><i class="fa-solid fa-user-pen mr-2"></i>แก้ไขข้อมูลผู้ใช้งาน</h3>
-                <button onclick="closeUserEditModal()" class="text-gray-300 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <form id="edit-user-form" onsubmit="saveUserEdit(event)" class="p-6 space-y-4">
-                <input type="hidden" id="edit_u_id">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">ชื่อ</label>
-                        <input type="text" id="edit_u_firstname" required class="w-full border rounded p-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">นามสกุล</label>
-                        <input type="text" id="edit_u_lastname" required class="w-full border rounded p-2 text-sm">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
-                        <input type="text" id="edit_u_username" readonly class="w-full border rounded p-2 text-sm bg-gray-100 text-gray-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Role</label>
-                        <select id="edit_u_role" class="w-full border rounded p-2 text-sm">
-                            <option value="user">user</option>
-                            <option value="admin">admin</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">ตำแหน่ง</label>
-                        <input type="text" id="edit_u_position" class="w-full border rounded p-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">หน่วยงาน</label>
-                        <input type="text" id="edit_u_organization" class="w-full border rounded p-2 text-sm">
-                    </div>
-                </div>
-                <div class="pt-4 border-t flex justify-end gap-2">
-                    <button type="button" onclick="closeUserEditModal()" class="px-4 py-2 border rounded text-sm">ยกเลิก</button>
-                    <button type="submit" class="px-4 py-2 bg-gov-blue text-white rounded text-sm hover:bg-blue-800"><i class="fa-solid fa-save mr-1"></i> บันทึกการแก้ไข</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <div id="print-section" class="hidden"></div>
 
     <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
@@ -610,15 +468,6 @@
         let GAS_URL = localStorage.getItem('GAS_URL') || '';
         let USE_LOCAL = GAS_URL === '';
         
-        // ข้อมูลหลักตัวเลือก Master Data (ส่วนราชการ & ประเภทพนักงาน)
-        let masterAffiliations = JSON.parse(localStorage.getItem('gov_master_affiliations')) || [
-            'สำนักพุทธศาสนา', 'กองช่าง', 'สำนักเทคโนโลยีสารสนเทศ', 'สำนักงานเทศบาล'
-        ];
-        let masterPositionTypes = JSON.parse(localStorage.getItem('gov_master_position_types')) || [
-            'พนักงานเทศบาล', 'พนักงานครูและบุคลากรทางการศึกษา', 'พนักงานสถานธนานุบาล'
-        ];
-        let currentMasterType = ''; 
-
         let db = { employees: [] }; 
         if(USE_LOCAL && !localStorage.getItem('gov_db')) {
             localStorage.setItem('gov_db', JSON.stringify([{
@@ -662,54 +511,50 @@
             loadCurrentUserInfo();
             loadEmployees();
             loadAgencySettings();
-            populateMasterDropdowns();
             nav('dashboard');
             buildTemplateConfigUI();
             initFormListeners();
             initFlatpickr();
         };
 
-        <!-- 🔹 โหลดข้อมูลโปรไฟล์ Header & ตรวจสอบ Role Admin (บังคับดึงจาก Sheet เท่านั้น) -->
+        <!-- 🔹 ข้อ 2: โหลดข้อมูลโปรไฟล์ Header จาก Google Sheet via GAS -->
         function loadCurrentUserInfo() {
             const rawUser = sessionStorage.getItem('currentUser');
+            let user = { name: 'ผู้ใช้งานระบบ', role: 'เจ้าหน้าที่', avatar: 'profile_1_1786452882.png' };
             let userKey = '';
 
             if (rawUser) {
                 try {
                     const parsed = JSON.parse(rawUser);
-                    userKey = parsed.username || parsed.email || parsed.name || rawUser;
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        user = { ...user, ...parsed };
+                        userKey = parsed.username || parsed.email || parsed.name || rawUser;
+                    } else {
+                        user.name = rawUser;
+                        userKey = rawUser;
+                    }
                 } catch(e) {
+                    user.name = rawUser;
                     userKey = rawUser;
                 }
             }
 
-            if (GAS_URL) {
-                fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getUserInfo', payload: { userKey: userKey } })
-                })
-                .then(res => res.json())
-                .then(res => {
+            renderHeaderUser(user);
+
+            // หากเชื่อมต่อ Google Apps Script ให้ดึงข้อมูลล่าสุดจาก Google Sheet
+            if (!USE_LOCAL && GAS_URL) {
+                fetchAPI('getUserInfo', { userKey: userKey }).then(res => {
                     if (res && res.status === 'success' && res.data) {
                         const sheetUser = {
-                            name: res.data.name || (res.data.firstname ? `${res.data.firstname} ${res.data.lastname}` : 'ผู้ใช้งานระบบ'),
-                            role: res.data.role || 'user',
-                            avatar: res.data.profile_image || 'profile_1_1786452882.png'
+                            name: res.data.name || res.data.EmployeeName || user.name,
+                            role: res.data.role || res.data.PositionName || user.role,
+                            avatar: res.data.avatar || res.data.photo || user.avatar
                         };
                         renderHeaderUser(sheetUser);
-
-                        if (sheetUser.role && String(sheetUser.role).toLowerCase() === 'admin') {
-                            const adminMenu = document.getElementById('menu-account-settings');
-                            if (adminMenu) adminMenu.classList.remove('hidden');
-                        }
-                    } else {
-                        renderHeaderUser({name: 'ไม่พบผู้ใช้ในระบบ', role: 'Unknown', avatar: 'profile_1_1786452882.png'});
                     }
                 }).catch(err => {
-                    renderHeaderUser({name: 'ข้อผิดพลาดในการดึงข้อมูล Sheet', role: '-', avatar: 'profile_1_1786452882.png'});
+                    console.warn('ไม่สามารถดึงข้อมูลโปรไฟล์จาก Google Sheet ได้ ใช้ข้อมูลจาก Session:', err);
                 });
-            } else {
-                renderHeaderUser({name: 'กรุณาตั้งค่า GAS URL เพื่อเชื่อมต่อ', role: '-', avatar: 'profile_1_1786452882.png'});
             }
         }
 
@@ -725,263 +570,13 @@
             }
         }
 
-        <!-- 🔹 Dropdown Master Data Management -->
-        function populateMasterDropdowns() {
-            const affSelect = document.getElementById('f_schoolAffiliation');
-            if (affSelect) {
-                const curVal = affSelect.value;
-                affSelect.innerHTML = '<option value="">--- เลือกส่วนราชการ ---</option>';
-                masterAffiliations.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item;
-                    opt.textContent = item;
-                    affSelect.appendChild(opt);
-                });
-                if (curVal) affSelect.value = curVal;
-            }
-
-            const posSelect = document.getElementById('f_positionType');
-            if (posSelect) {
-                const curVal = posSelect.value;
-                posSelect.innerHTML = '<option value="">--- เลือกประเภทพนักงาน ---</option>';
-                masterPositionTypes.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item;
-                    opt.textContent = item;
-                    posSelect.appendChild(opt);
-                });
-                if (curVal) posSelect.value = curVal;
-            }
-        }
-
-        function openMasterModal(type) {
-            currentMasterType = type;
-            const title = type === 'affiliation' ? 'จัดการตัวเลือกส่วนราชการ' : 'จัดการตัวเลือกประเภทพนักงาน';
-            document.getElementById('modal-master-title').innerText = title;
-            document.getElementById('master_input_val').value = '';
-            document.getElementById('master_edit_index').value = '-1';
-            renderMasterList();
-            document.getElementById('modal-master-data').classList.remove('hidden');
-        }
-
-        function closeMasterModal() {
-            document.getElementById('modal-master-data').classList.add('hidden');
-            populateMasterDropdowns();
-        }
-
-        function renderMasterList() {
-            const listContainer = document.getElementById('master_items_list');
-            listContainer.innerHTML = '';
-            const items = currentMasterType === 'affiliation' ? masterAffiliations : masterPositionTypes;
-
-            items.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.className = 'px-4 py-2 flex justify-between items-center hover:bg-gray-50';
-                li.innerHTML = `
-                    <span class="font-medium text-gray-700">${item}</span>
-                    <div class="flex gap-2">
-                        <button onclick="editMasterItem(${index})" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1"><i class="fa-solid fa-pen"></i> แก้ไข</button>
-                        <button onclick="deleteMasterItem(${index})" class="text-red-500 hover:text-red-700 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i> ลบ</button>
-                    </div>
-                `;
-                listContainer.appendChild(li);
-            });
-        }
-
-        function saveMasterItem() {
-            const valInput = document.getElementById('master_input_val');
-            const editIdx = parseInt(document.getElementById('master_edit_index').value);
-            const val = valInput.value.trim();
-
-            if (!val) {
-                showToast('กรุณากรอกข้อความ', 'error');
-                return;
-            }
-
-            let targetArr = currentMasterType === 'affiliation' ? masterAffiliations : masterPositionTypes;
-
-            if (editIdx >= 0) {
-                targetArr[editIdx] = val;
-            } else {
-                if (!targetArr.includes(val)) targetArr.push(val);
-            }
-
-            if (currentMasterType === 'affiliation') {
-                masterAffiliations = targetArr;
-                localStorage.setItem('gov_master_affiliations', JSON.stringify(masterAffiliations));
-            } else {
-                masterPositionTypes = targetArr;
-                localStorage.setItem('gov_master_position_types', JSON.stringify(masterPositionTypes));
-            }
-
-            valInput.value = '';
-            document.getElementById('master_edit_index').value = '-1';
-            renderMasterList();
-            showToast('บันทึกตัวเลือกเรียบร้อย');
-        }
-
-        function editMasterItem(index) {
-            const items = currentMasterType === 'affiliation' ? masterAffiliations : masterPositionTypes;
-            document.getElementById('master_input_val').value = items[index];
-            document.getElementById('master_edit_index').value = index;
-        }
-
-        function deleteMasterItem(index) {
-            if (!confirm('ยืนยันการลบตัวเลือกนี้?')) return;
-            if (currentMasterType === 'affiliation') {
-                masterAffiliations.splice(index, 1);
-                localStorage.setItem('gov_master_affiliations', JSON.stringify(masterAffiliations));
-            } else {
-                masterPositionTypes.splice(index, 1);
-                localStorage.setItem('gov_master_position_types', JSON.stringify(masterPositionTypes));
-            }
-            renderMasterList();
-            showToast('ลบรายการเรียบร้อย');
-        }
-
-        <!-- 🔹 จัดการบัญชีผู้ใช้ (Google Sheet Users Only) และ สถานะระบบ -->
-        function loadUsersList() {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังดึงข้อมูลจาก Google Sheet...</td></tr>';
-
-            if (!GAS_URL) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">กรุณาตั้งค่า GAS URL เพื่อเชื่อมต่อระบบก่อนใช้งาน</td></tr>';
-                return;
-            }
-
-            // บังคับดึงข้อมูลจาก Sheet เท่านั้น
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getUsers' })
-            }).then(res => res.json()).then(res => {
-                if (res && res.status === 'success' && res.data) {
-                    renderUsersTable(res.data);
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">ไม่สามารถโหลดข้อมูลผู้ใช้งานได้ หรือ ไม่พบข้อมูล</td></tr>';
-                }
-            }).catch(err => {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">เกิดข้อผิดพลาดในการเชื่อมต่อ Google Sheet</td></tr>';
-            });
-
-            // ตรวจสอบสถานะระบบ
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getSystemStatus' })
-            }).then(res => res.json()).then(res => {
-                if (res && res.status === 'success') {
-                    const toggle = document.getElementById('system-toggle-btn');
-                    const label = document.getElementById('system-toggle-label');
-                    toggle.checked = res.data.isOpen;
-                    label.innerText = res.data.isOpen ? 'ระบบเปิดใช้งาน' : 'ระบบปิดใช้งาน';
-                }
-            });
-        }
-
-        function toggleSystemStatus(cb) {
-            const isOpen = cb.checked;
-            const label = document.getElementById('system-toggle-label');
-            label.innerText = isOpen ? 'ระบบเปิดใช้งาน' : 'ระบบปิดใช้งาน';
-            
-            if (GAS_URL) {
-                fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'toggleSystemStatus', payload: { isOpen: isOpen } })
-                }).then(res => res.json()).then(res => {
-                    if(res.status === 'success') showToast('อัปเดตสถานะระบบเรียบร้อยแล้ว');
-                });
-            }
-        }
-
-        function renderUsersTable(users) {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = '';
-
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500">ไม่พบรายการผู้ใช้งานใน Sheet</td></tr>';
-                return;
-            }
-
-            users.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b hover:bg-gray-50';
-                const avatar = u.profile_image || 'profile_1_1786452882.png';
-                const roleBadge = u.role === 'admin' ? 'bg-purple-100 text-purple-700 font-semibold' : 'bg-gray-100 text-gray-600';
-
-                tr.innerHTML = `
-                    <td class="p-3 text-center font-mono text-xs">${u.id}</td>
-                    <td class="p-3">
-                        <img src="${avatar}" class="w-9 h-9 rounded-full object-cover border" onerror="this.src='profile_1_1786452882.png'">
-                    </td>
-                    <td class="p-3 font-semibold">${u.firstname || ''} ${u.lastname || ''}</td>
-                    <td class="p-3 font-mono text-xs text-blue-600">${u.username || '-'}</td>
-                    <td class="p-3 text-xs">${u.position || '-'}<br><span class="text-gray-400">${u.organization || '-'}</span></td>
-                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${roleBadge}">${u.role || 'user'}</span></td>
-                    <td class="p-3 text-center">
-                        <button onclick="openUserEditModal('${u.id}', '${u.firstname}', '${u.lastname}', '${u.username}', '${u.role}', '${u.position}', '${u.organization}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button onclick="deleteUser('${u.id}', '${u.username}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบ"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function openUserEditModal(id, fname, lname, uname, role, pos, org) {
-            document.getElementById('edit_u_id').value = id;
-            document.getElementById('edit_u_firstname').value = fname || '';
-            document.getElementById('edit_u_lastname').value = lname || '';
-            document.getElementById('edit_u_username').value = uname || '';
-            document.getElementById('edit_u_role').value = role || 'user';
-            document.getElementById('edit_u_position').value = pos || '';
-            document.getElementById('edit_u_organization').value = org || '';
-            document.getElementById('modal-edit-user').classList.remove('hidden');
-        }
-
-        function closeUserEditModal() {
-            document.getElementById('modal-edit-user').classList.add('hidden');
-        }
-
-        function saveUserEdit(e) {
-            e.preventDefault();
-            const payload = {
-                id: document.getElementById('edit_u_id').value,
-                firstname: document.getElementById('edit_u_firstname').value,
-                lastname: document.getElementById('edit_u_lastname').value,
-                role: document.getElementById('edit_u_role').value,
-                position: document.getElementById('edit_u_position').value,
-                organization: document.getElementById('edit_u_organization').value
-            };
-
-            if(!GAS_URL) return showToast('ไม่พบการเชื่อมต่อ', 'error');
-
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'updateUser', payload: payload })
-            }).then(res => res.json()).then(res => {
-                showToast('บันทึกการแก้ไขผู้ใช้ใน Sheet สำเร็จ');
-                closeUserEditModal();
-                loadUsersList();
-            }).catch(err => showToast('ไม่สามารถอัปเดตข้อมูลได้', 'error'));
-        }
-
-        function deleteUser(id, username) {
-            if (!confirm(`ยืนยันการลบบัญชีผู้ใช้ ${username} บน Google Sheet ใช่หรือไม่?`)) return;
-            if(!GAS_URL) return showToast('ไม่พบการเชื่อมต่อ', 'error');
-
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'deleteUser', payload: { id: id, username: username } })
-            }).then(res => res.json()).then(res => {
-                showToast('ลบบัญชีผู้ใช้เรียบร้อย');
-                loadUsersList();
-            }).catch(err => showToast('ไม่สามารถลบข้อมูลได้', 'error'));
-        }
-
-        <!-- 🔹 Flatpickr Init & Calculation -->
+        <!-- 🔹 ข้อ 1 & ข้อ 3: การตั้งค่า Flatpickr เดือนภาษาไทย, Dropdown ปี พ.ศ. และการคำนวณวันหมดอายุอัตโนมัติ -->
         function initFlatpickr() {
             if (typeof flatpickr === 'undefined') return;
 
             flatpickr.localize(flatpickr.l10ns.th);
 
+            // ช่องวันออกบัตร (เปลี่ยนเดือนเป็นภาษาไทย, ปีเป็น Dropdown พ.ศ.)
             issuePicker = flatpickr('#f_issueDate', {
                 locale: 'th',
                 dateFormat: 'Y-m-d',
@@ -1012,17 +607,19 @@
                 }
             });
 
+            // ช่องวันหมดอายุ (ล็อก readonly ไม่ให้ผู้ใช้คลิกเลือกได้)
             expirePicker = flatpickr('#f_expireDate', {
                 locale: 'th',
                 dateFormat: 'Y-m-d',
                 altInput: true,
                 altFormat: 'j F Y',
-                clickOpens: false,
+                clickOpens: false, // ห้ามเปิดปฏิทิน
                 onReady: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
                 onValueUpdate: (selectedDates, dateStr, instance) => formatBuddhistYear(instance)
             });
         }
 
+        // ฟังก์ชันสร้าง Dropdown สำหรับเลือกปี พ.ศ.
         function createYearDropdown(instance) {
             if (!instance || !instance.calendarContainer) return;
             const yearElement = instance.currentYearElement;
@@ -1061,12 +658,13 @@
             }
         }
 
+        <!-- 🔹 ข้อ 3: ฟังก์ชันคำนวณวันหมดอายุ (+6 ปี ลบ 1 วัน) -->
         function calculateAndSetExpireDate(issueDateObj) {
             if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
 
             const expDate = new Date(issueDateObj);
-            expDate.setFullYear(expDate.getFullYear() + 6);
-            expDate.setDate(expDate.getDate() - 1);
+            expDate.setFullYear(expDate.getFullYear() + 6); // บวก 6 ปี
+            expDate.setDate(expDate.getDate() - 1);         // ลบออก 1 วัน
 
             const expStr = expDate.toISOString().split('T')[0];
 
@@ -1094,19 +692,27 @@
                 el.classList.remove('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
                 el.classList.add('text-gray-600', 'border-transparent');
             });
+            
+            const btnMap = {
+                'dashboard': 0, 'employees': 1, 'form': 2, 'agency-settings': 3, 
+                'print-history': 4, 'template-settings': 5, 'system-settings': 6
+            };
+            if(btnMap[viewId] !== undefined) {
+                let btns = document.querySelectorAll('.menu-btn');
+                btns[btnMap[viewId]].classList.add('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
+                btns[btnMap[viewId]].classList.remove('text-gray-600', 'border-transparent');
+            }
 
             document.getElementById(`sec-${viewId}`).classList.remove('hidden');
 
             if (viewId === 'dashboard') updateDashboard();
             if (viewId === 'employees') renderEmployeeTable();
             if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
-            if (viewId === 'account-settings') loadUsersList();
         }
 
         function openAddForm() {
             document.getElementById('f_id').value = '';
             document.getElementById('emp-form').reset();
-            populateMasterDropdowns();
             document.getElementById('f_academic_standing_wrapper').classList.add('hidden');
             document.getElementById('form-title').innerText = 'เพิ่มข้อมูลบุคลากรใหม่';
 
@@ -1134,7 +740,6 @@
                 if(USE_LOCAL) {
                     setTimeout(() => {
                         let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
-
                         if (action === 'getEmployees') resolve({status:'success', data: localData});
                         else if (action === 'saveEmployee') {
                             if(payload.ID) {
@@ -1176,7 +781,7 @@
                     fetch(GAS_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: action, payload: payload, data: payload })
+                        body: JSON.stringify({ action: action, payload: payload })
                     })
                     .then(res => res.json())
                     .then(resolve)
@@ -1392,8 +997,6 @@
                 return;
             }
             
-            populateMasterDropdowns();
-
             document.getElementById('form-title').innerText = 'แก้ไขข้อมูลบุคลากร';
             document.getElementById('f_id').value = emp.ID;
             document.getElementById('f_citizenId').value = formatCitizenId(emp.CitizenID || '');
@@ -1475,7 +1078,6 @@
             if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
         }
 
-        <!-- 🔹 บังคับน้ำหนัก Font บน Template ให้เป็น "ตัวบาง" (300) ทั้งหมด -->
         function renderPreviewBoard(emp, targetContainerId) {
             const container = document.getElementById(targetContainerId);
             if(!container) return;
@@ -1490,34 +1092,33 @@
 
             let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
             
-            const createTxt = (id, text, x, y, size, fw='300') => {
+            const createTxt = (id, text, x, y, size, fw='400') => {
                 return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
             };
 
             const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
 
-            // ใช้ค่า '300' (ตัวบาง) ให้กับทุกจุดบนบัตร
-            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
-            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
-            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
+            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '700');
+            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '700');
+            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '400');
             
             const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
-            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '300');
+            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '400');
             
             const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
-            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '300');
+            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '400');
 
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '300');
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '300');
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '300');
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '400');
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '400');
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '400');
 
             const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
             const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
             const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
 
-            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '300');
-            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '300');
-            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '300');
+            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '700');
+            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '400');
+            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '600');
 
             container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
         }
