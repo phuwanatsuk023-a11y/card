@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</title>
     
-    <!-- 🔒 ระบบตรวจสอบการเข้าสู่ระบบ (Authentication Guard) -->
     <script>
         (function() {
             const currentUser = sessionStorage.getItem('currentUser');
@@ -16,7 +15,6 @@
         })();
     </script>
 
-    <!-- Fonts: Noto Sans Thai & TH Sarabun PSK -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,7 +22,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&display=swap');
     </style>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -42,10 +39,7 @@
         }
     </script>
     
-    <!-- Icons (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Flatpickr (Thai Calendar Support) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
@@ -65,9 +59,7 @@
                 box-shadow: none !important;
                 border: none !important;
             }
-            .print-card-wrapper img.card-bg {
-                width: 100%; height: 100%; object-fit: contain;
-            }
+            .print-card-wrapper img.card-bg { width: 100%; height: 100%; object-fit: contain; }
         }
 
         .card-preview-container {
@@ -82,14 +74,7 @@
             font-family: 'Sarabun', sans-serif !important;
         }
         .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        
-        .overlay-item {
-            position: absolute;
-            z-index: 10;
-            color: #000;
-            white-space: nowrap;
-        }
-        
+        .overlay-item { position: absolute; z-index: 10; color: #000; white-space: nowrap; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -98,6 +83,7 @@
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
 
+    <!-- Header Section (ปรับแต่งแถวบน-แถวล่างผู้ใช้งาน)[cite: 2] -->
     <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
         <div class="px-6 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -107,13 +93,14 @@
                     <p class="text-xs text-gray-300" id="header-org-name"></p>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูล...</p>
-                    <p class="text-xs text-gray-300" id="header-user-role">เจ้าหน้าที่</p>
+            
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden md:flex flex-col justify-center">
+                    <span class="font-bold text-sm text-white" id="header-user-name">กำลังโหลด...</span>
+                    <span class="text-xs text-gov-gold font-medium" id="header-user-role">เจ้าหน้าที่</span>
                 </div>
-                <img id="header-user-avatar" src="profile_1_1786452882.png" alt="User Profile" class="w-11 h-11 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
-                <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
+                <img id="header-user-avatar" src="profile_1_1786452882.png" alt="User Profile" class="w-10 h-10 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
+                <button class="text-red-400 hover:text-red-300 ml-2 p-1" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
                     <i class="fa-solid fa-right-from-bracket text-xl"></i>
                 </button>
             </div>
@@ -122,6 +109,7 @@
 
     <div id="app-container" class="flex flex-1 overflow-hidden">
         
+        <!-- Sidebar Navigation (ลบประวัติการพิมพ์ / เพิ่มตั้งค่าบัญชี)[cite: 2] -->
         <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
             <nav class="flex-1 py-4 flex flex-col gap-1">
                 <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
@@ -136,16 +124,19 @@
                 <a href="#" onclick="nav('agency-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-building-circle-check w-5"></i> <span>เพิ่มหน่วยงาน</span>
                 </a>
-                <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>ประวัติการพิมพ์</span>
-            </a>
+                
                 <div class="my-2 border-t border-gray-100"></div>
                 <p class="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ตั้งค่าระบบ</p>
                 <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-id-card-clip w-5"></i> <span>ตั้งค่า Template บัตร</span>
                 </a>
                 
+                <!-- เมนูตั้งค่าบัญชี (แสดงเฉพาะ Admin)[cite: 2] -->
+                <a href="#" id="menu-account-settings" onclick="nav('account-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors hidden">
+                    <i class="fa-solid fa-user-gear w-5"></i> <span>ตั้งค่าบัญชี</span>
+                </a>
             </nav>
+            
             <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
                 <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-gov-gold shadow-sm">
                 <div>
@@ -161,13 +152,10 @@
             <section id="sec-dashboard" class="view-section">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ภาพรวมระบบ (Dashboard)</h2>
-                    <div class="flex gap-2">
-                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
-                            <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
-                        </button>
-                    </div>
+                    <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
+                        <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
+                    </button>
                 </div>
-                
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-blue-500">
                         <div class="flex justify-between items-start">
@@ -221,7 +209,7 @@
                     <div class="p-4 border-b border-gray-200 flex gap-4 bg-gray-50 rounded-t-lg">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
-                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวประชาชน หรือเลขที่บัตร..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-gov-blue focus:ring-1 focus:ring-gov-blue">
+                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวประชาชน..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-gov-blue">
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -237,14 +225,13 @@
                                     <th class="p-3 text-center w-48">จัดการ</th>
                                 </tr>
                             </thead>
-                            <tbody id="emp-table-body" class="text-sm">
-                            </tbody>
+                            <tbody id="emp-table-body" class="text-sm"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <!-- Section: ฟอร์มเพิ่ม/แก้ไขข้อมูล -->
+            <!-- ฟอร์มเพิ่ม/แก้ไขข้อมูลบุคลากร (พร้อมปุ่ม + เปิด Modal)[cite: 2] -->
             <section id="sec-form" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy" id="form-title">เพิ่มข้อมูลบุคลากรใหม่</h2>
@@ -255,52 +242,60 @@
                     <form id="emp-form" onsubmit="saveEmployee(event)" class="space-y-6">
                         <input type="hidden" id="f_id">
                         
-                        <!-- ข้อมูลส่วนบุคคล -->
                         <div class="border-b pb-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลส่วนบุคคลและสังกัด</h3>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                 <div>
-                                    <label for="f_citizenId" class="block text-sm font-medium text-gray-700 mb-1">เลขประจำตัวประชาชน (13 หลัก) <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_citizenId" required maxlength="17" placeholder="x xxxx xxxxx xx x" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">เลขประจำตัวประชาชน (13 หลัก) <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_citizenId" required maxlength="17" placeholder="x xxxx xxxxx xx x" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
                                 </div>
                                 <div>
-                                    <label for="f_employeeName" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_employeeName" required placeholder="นาย/นาง/นางสาว..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_employeeName" required placeholder="นาย/นาง/นางสาว..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <!-- ส่วนราชการ พร้อมปุ่ม +[cite: 2] -->
                                 <div>
-                                    <label for="f_schoolAffiliation" class="block text-sm font-medium text-gray-700 mb-1">ส่วนราชการ <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_schoolAffiliation" required placeholder="เช่น สำนักพุทธศาสนา / กองช่าง" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ส่วนราชการ <span class="text-red-500">*</span></label>
+                                    <div class="flex gap-2">
+                                        <select id="f_schoolAffiliation" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
+                                        </select>
+                                        <button type="button" onclick="openOptionModal('school')" class="bg-gov-blue text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors" title="จัดการส่วนราชการ">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label for="f_positionName" class="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_positionName" required placeholder="เช่น นักทรัพยากรบุคคลปฏิบัติการ" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_positionName" required placeholder="เช่น นักทรัพยากรบุคคลปฏิบัติการ" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
                                 </div>
                             </div>
 
                             <div id="f_academic_standing_wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 hidden">
                                 <div>
-                                    <label for="f_academicStanding" class="block text-sm font-medium text-gray-700 mb-1">ชื่อสายงานผู้บริหาร</label>
-                                    <input type="text" id="f_academicStanding" placeholder="(นักบริหารงาน......)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อสายงานผู้บริหาร</label>
+                                    <input type="text" id="f_academicStanding" placeholder="(นักบริหารงาน......)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- ประเภทพนักงาน พร้อมปุ่ม +[cite: 2] -->
                                 <div>
-                                    <label for="f_positionType" class="block text-sm font-medium text-gray-700 mb-1">ประเภทพนักงาน <span class="text-red-500">*</span></label>
-                                    <select id="f_positionType" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
-                                        <option value="">--- เลือกประเภทพนักงาน ---</option>
-                                        <option value="พนักงานเทศบาล">พนักงานเทศบาล</option>
-                                        <option value="พนักงานครูและบุคลากรทางการศึกษา">พนักงานครูและบุคลากรทางการศึกษา</option>
-                                        <option value="พนักงานสถานธนานุบาล">พนักงานสถานธนานุบาล</option>
-                                    </select>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทพนักงาน <span class="text-red-500">*</span></label>
+                                    <div class="flex gap-2">
+                                        <select id="f_positionType" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
+                                        </select>
+                                        <button type="button" onclick="openOptionModal('positionType')" class="bg-gov-blue text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors" title="จัดการประเภทพนักงาน">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label for="f_gender" class="block text-sm font-medium text-gray-700 mb-1">เพศ <span class="text-red-500">*</span></label>
-                                    <select id="f_gender" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">เพศ <span class="text-red-500">*</span></label>
+                                    <select id="f_gender" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
                                         <option value="">เลือกเพศ</option>
                                         <option value="ชาย">ชาย</option>
                                         <option value="หญิง">หญิง</option>
@@ -308,8 +303,8 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label for="f_bloodType" class="block text-sm font-medium text-gray-700 mb-1">หมู่โลหิต</label>
-                                    <select id="f_bloodType" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">หมู่โลหิต</label>
+                                    <select id="f_bloodType" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue text-sm">
                                         <option value="">เลือกหมู่โลหิต (ไม่บังคับ)</option>
                                         <option value="เอ">เอ</option>
                                         <option value="บี">บี</option>
@@ -320,21 +315,20 @@
                             </div>
                         </div>
 
-                        <!-- ข้อมูลเฉพาะของบัตร -->
                         <div>
                             <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-green-500 pl-2">ข้อมูลเฉพาะของบัตร</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">เลขที่บัตร <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_cardNum" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                    <input type="text" id="f_cardNum" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue">
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white cursor-pointer">
+                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue bg-white cursor-pointer">
                                 </div>
                                 <div>
-                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-xs text-gray-400"></span></label>
-                                    <input type="text" id="f_expireDate" required placeholder="คำนวณอัตโนมัติ" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed focus:outline-none">
+                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ</label>
+                                    <input type="text" id="f_expireDate" required placeholder="คำนวณอัตโนมัติ" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed">
                                 </div>
                             </div>
                         </div>
@@ -347,12 +341,59 @@
                 </div>
             </section>
 
-            <!-- Section: ตั้งค่าหน่วยงาน -->
+            <!-- Section: ตั้งค่าบัญชีผู้ใช้ (สำหรับ Admin)[cite: 2] -->
+            <section id="sec-account-settings" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-user-gear mr-2"></i>จัดการตั้งค่าบัญชีผู้ใช้งาน</h2>
+                    <button onclick="loadUsersFromSheet()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded text-sm"><i class="fa-solid fa-rotate mr-1"></i> รีเฟรชข้อมูล</button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-sm border-b">
+                                    <th class="p-3">รูปโปรไฟล์</th>
+                                    <th class="p-3">ชื่อ - นามสกุล</th>
+                                    <th class="p-3">Username</th>
+                                    <th class="p-3">ตำแหน่ง / สังกัด</th>
+                                    <th class="p-3 text-center">สิทธิ์การใช้งาน (Role)</th>
+                                    <th class="p-3 text-center w-36">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body" class="text-sm">
+                                <tr><td colspan="6" class="text-center py-6 text-gray-400">กำลังโหลดข้อมูลผู้ใช้งาน...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Modal จัดการตัวเลือก (ส่วนราชการ / ประเภทพนักงาน) -->
+            <div id="optionModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden">
+                <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                        <h3 class="font-bold text-lg text-gov-navy" id="modalTitle">จัดการข้อมูลตัวเลือก</h3>
+                        <button onclick="closeOptionModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="newOptionInput" placeholder="พิมพ์ชื่อตัวเลือกใหม่..." class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gov-blue">
+                        <button onclick="addNewOption()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-plus mr-1"></i> เพิ่ม</button>
+                    </div>
+
+                    <div class="border rounded-lg max-h-60 overflow-y-auto divide-y" id="optionList"></div>
+
+                    <div class="mt-5 pt-3 border-t text-right">
+                        <button onclick="closeOptionModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-lg text-sm font-medium">ปิด</button>
+                    </div>
+                </div>
+            </div>
+
             <section id="sec-agency-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-building-user mr-2"></i>ตั้งค่าหน่วยงาน</h2>
                 </div>
-
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-4xl">
                     <form id="agency-form" onsubmit="event.preventDefault(); saveAgencySettings();">
                         <div class="mb-6 pb-6 border-b">
@@ -366,63 +407,40 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <input type="file" id="agency_logo_input" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" onchange="handleAgencyLogoUpload(event)">
+                                    <input type="file" id="agency_logo_input" accept="image/*" class="hidden" onchange="handleAgencyLogoUpload(event)">
                                     <label for="agency_logo_input" class="cursor-pointer px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2">
                                         <i class="fa-solid fa-upload text-gray-500"></i> เลือกไฟล์รูปโลโก้
                                     </label>
-                                    <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WEBP (ขนาดไม่เกิน 2MB)</p>
                                     <input type="hidden" id="f_agency_logo">
                                 </div>
                             </div>
                         </div>
-
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อนายก อปท. (ผู้บริหารสูงสุด) *</label>
-                                <input type="text" id="f_head_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">2. ตำแหน่ง *</label>
-                                <input type="text" id="f_head_position" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">3. ชื่อ อปท. (เช่น เทศบาลตำบล/อบต./เมืองพัทยา) *</label>
-                                <input type="text" id="f_agency_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">4. จังหวัด *</label>
-                                <input type="text" id="f_province" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
-                            </div>
+                            <div><label class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อนายก อปท. *</label><input type="text" id="f_head_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue"></div>
+                            <div><label class="block text-sm font-semibold text-gray-700 mb-1">2. ตำแหน่ง *</label><input type="text" id="f_head_position" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue"></div>
+                            <div><label class="block text-sm font-semibold text-gray-700 mb-1">3. ชื่อ อปท. *</label><input type="text" id="f_agency_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue"></div>
+                            <div><label class="block text-sm font-semibold text-gray-700 mb-1">4. จังหวัด *</label><input type="text" id="f_province" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue"></div>
                         </div>
-
                         <div class="mt-8 pt-4 border-t flex justify-end gap-3">
-                            <button type="button" onclick="resetAgencySettings()" class="px-4 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-100 text-sm font-medium">
-                                <i class="fa-solid fa-rotate-left mr-1"></i> รีเซ็ตค่าเริ่มต้น
-                            </button>
-                            <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md text-sm font-medium">
-                                <i class="fa-solid fa-save mr-1"></i> บันทึกการตั้งค่า
-                            </button>
+                            <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md text-sm font-medium"><i class="fa-solid fa-save mr-1"></i> บันทึกการตั้งค่า</button>
                         </div>
                     </form>
                 </div>
             </section>
 
-            <!-- Section: ตั้งค่า Template -->
             <section id="sec-template-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
                     <button onclick="saveTemplateSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-save"></i> บันทึกตำแหน่ง</button>
                 </div>
-                
                 <div class="flex flex-col lg:flex-row gap-6">
                     <div class="w-full lg:w-1/3 bg-white p-4 rounded-lg shadow-sm border overflow-y-auto max-h-[70vh]">
-                        <p class="text-sm text-gray-500 mb-4"><i class="fa-solid fa-circle-info"></i> ปรับแต่งตำแหน่งและขนาด (อ้างอิงเป็นเปอร์เซ็นต์ % ของความกว้างบัตรรวมหน้า-หลัง)</p>
                         <div class="space-y-4" id="config-panel"></div>
                     </div>
                     <div class="w-full lg:w-2/3">
                         <div class="bg-white p-4 rounded-lg shadow-sm border flex justify-center items-center bg-gray-100 overflow-x-auto">
                             <div class="card-preview-container" id="editor-preview-board">
-                                <img src="card_template.png" class="card-bg" alt="Template" onerror="this.src='https://placehold.co/2048x828/fff/ccc?text=MISSING+card_template.png'">
+                                <img src="card_template.png" class="card-bg" alt="Template">
                             </div>
                         </div>
                     </div>
@@ -434,81 +452,32 @@
                     <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
                     <div class="flex gap-2">
                         <button onclick="nav('employees')" class="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-arrow-left"></i> กลับ</button>
-                        <button onclick="executePrint()" class="bg-gov-blue hover:bg-blue-800 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์ (Print / PDF)</button>
+                        <button onclick="executePrint()" class="bg-gov-blue hover:bg-blue-800 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์</button>
                     </div>
                 </div>
-
-                <div class="bg-gray-200 p-8 rounded-lg shadow-inner flex flex-col items-center gap-6 overflow-y-auto no-print" id="print-preview-container">
-                </div>
-            </section>
-
-            <section id="sec-system-settings" class="view-section hidden">
-                <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
-                    <h2 class="text-xl font-bold text-gov-navy mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
-                    <p class="text-sm text-gray-600 mb-6">หากปล่อยว่างไว้ ระบบจะทำงานในโหมด "Local Storage" หากต้องการให้เชื่อมกับ Google Sheets ให้วาง Web App URL ลงที่นี่</p>
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold mb-1">Web App URL (GAS End Point)</label>
-                        <input type="text" id="set_gas_url" placeholder="https://script.google.com/macros/s/AKfycby.../exec" class="w-full border rounded px-3 py-2 font-mono text-sm">
-                    </div>
-                    <button onclick="saveSystemSettings()" class="bg-gov-blue text-white px-4 py-2 rounded"><i class="fa-solid fa-save"></i> บันทึกการเชื่อมต่อ</button>
-                </div>
+                <div class="bg-gray-200 p-8 rounded-lg shadow-inner flex flex-col items-center gap-6 overflow-y-auto no-print" id="print-preview-container"></div>
             </section>
 
         </main>
     </div>
 
     <div id="print-section" class="hidden"></div>
-
-    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
-        Message
-    </div>
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">Message</div>
 
     <script>
         let GAS_URL = localStorage.getItem('GAS_URL') || '';
         let USE_LOCAL = GAS_URL === '';
-        
-        let db = { employees: [] }; 
-        if(USE_LOCAL && !localStorage.getItem('gov_db')) {
-            localStorage.setItem('gov_db', JSON.stringify([{
-                ID: '1', CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายสมชาย ใจดี', SchoolAffiliation: 'สำนักเทคโนโลยีสารสนเทศ', PositionName: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', AcademicStanding: '', PositionType: 'พนักงานเทศบาล', Gender: 'ชาย', BloodType: 'โอ', CardNumber: 'C001/2569', IssueDate: '2026-08-22', ExpireDate: '2032-08-21', Status: 'พร้อมพิมพ์'
-            }]));
-        }
+        let db = { employees: [] };
 
-        let agencySettings = JSON.parse(localStorage.getItem('gov_agency_settings')) || { 
-            head_name: 'นายสมศักดิ์ รักชาติ', 
-            head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
-            agency_name: 'เทศบาลตำบลตัวอย่าง', 
-            province: 'จังหวัดตัวอย่าง', 
-            agency_logo: '' 
+        let currentOptionType = ''; 
+        let defaultOptions = {
+            school: ['สำนักพุทธศาสนา', 'กองช่าง', 'กองการศึกษา', 'สำนักโต๊ะทำงาน'],
+            positionType: ['พนักงานเทศบาล', 'พนักงานครูและบุคลากรทางการศึกษา', 'พนักงานสถานธนานุบาล']
         };
-
-        let tplConfig = {
-            citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
-            nameX: 17, nameY: 34, nameSize: 1.6,
-            positionX: 17, positionY: 43, positionSize: 1.4,
-            bloodTypeX: 17, bloodTypeY: 52, bloodTypeSize: 1.3,
-            cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
-            issueDateX: 62, issueDateY: 78, expireDateX: 85, expireDateY: 78, dateSize: 1.2,
-            headNameX: 65, headNameY: 30, headNameSize: 1.4,
-            headPositionX: 65, headPositionY: 38, headPositionSize: 1.2,
-            agencyProvinceX: 65, agencyProvinceY: 46, agencyProvinceSize: 1.3,
-            positionTypeX: 17, positionTypeY: 61, positionTypeSize: 1.3
-        };
-
-        if(localStorage.getItem('gov_tpl_config')) {
-            const savedConfig = JSON.parse(localStorage.getItem('gov_tpl_config'));
-            tplConfig = { ...tplConfig, ...savedConfig };
-        }
-
-        let currentPrintList = [];
-        let issuePicker = null, expirePicker = null;
-
-        const defaultLogoSVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%231d4ed8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>';
 
         window.onload = () => {
-            document.getElementById('set_gas_url').value = GAS_URL;
             loadCurrentUserInfo();
+            loadOptionSettings();
             loadEmployees();
             loadAgencySettings();
             nav('dashboard');
@@ -517,442 +486,257 @@
             initFlatpickr();
         };
 
-        <!-- 🔹 ข้อ 2: โหลดข้อมูลโปรไฟล์ Header จาก Google Sheet via GAS -->
+        // แสดงผู้ใช้ใน Header (แถวบน: ชื่อ, แถวล่าง: Role)[cite: 2]
         function loadCurrentUserInfo() {
             const rawUser = sessionStorage.getItem('currentUser');
             let user = { name: 'ผู้ใช้งานระบบ', role: 'เจ้าหน้าที่', avatar: 'profile_1_1786452882.png' };
-            let userKey = '';
 
             if (rawUser) {
                 try {
                     const parsed = JSON.parse(rawUser);
-                    if (typeof parsed === 'object' && parsed !== null) {
-                        user = { ...user, ...parsed };
-                        userKey = parsed.username || parsed.email || parsed.name || rawUser;
-                    } else {
-                        user.name = rawUser;
-                        userKey = rawUser;
-                    }
+                    user.name = parsed.name || `${parsed.firstname || ''} ${parsed.lastname || ''}`.trim() || parsed.username || 'ผู้ใช้งาน';
+                    user.role = parsed.role || 'เจ้าหน้าที่';
+                    if (parsed.profile_image || parsed.avatar) user.avatar = parsed.profile_image || parsed.avatar;
                 } catch(e) {
                     user.name = rawUser;
-                    userKey = rawUser;
                 }
             }
 
-            renderHeaderUser(user);
+            document.getElementById('header-user-name').innerText = user.name;
+            document.getElementById('header-user-role').innerText = user.role;
+            if(user.avatar) document.getElementById('header-user-avatar').src = user.avatar;
 
-            // หากเชื่อมต่อ Google Apps Script ให้ดึงข้อมูลล่าสุดจาก Google Sheet
-            if (!USE_LOCAL && GAS_URL) {
-                fetchAPI('getUserInfo', { userKey: userKey }).then(res => {
-                    if (res && res.status === 'success' && res.data) {
-                        const sheetUser = {
-                            name: res.data.name || res.data.EmployeeName || user.name,
-                            role: res.data.role || res.data.PositionName || user.role,
-                            avatar: res.data.avatar || res.data.photo || user.avatar
-                        };
-                        renderHeaderUser(sheetUser);
-                    }
-                }).catch(err => {
-                    console.warn('ไม่สามารถดึงข้อมูลโปรไฟล์จาก Google Sheet ได้ ใช้ข้อมูลจาก Session:', err);
-                });
+            // ตรวจสอบสิทธิ์แสดงเมนู ตั้งค่าบัญชี (เฉพาะ admin)[cite: 2]
+            if (String(user.role).toLowerCase() === 'admin') {
+                document.getElementById('menu-account-settings').classList.remove('hidden');
             }
         }
 
-        function renderHeaderUser(user) {
-            if (document.getElementById('header-user-name')) {
-                document.getElementById('header-user-name').innerText = user.name || 'ผู้ใช้งานระบบ';
-            }
-            if (document.getElementById('header-user-role')) {
-                document.getElementById('header-user-role').innerText = user.role || 'เจ้าหน้าที่';
-            }
-            if (document.getElementById('header-user-avatar') && user.avatar) {
-                document.getElementById('header-user-avatar').src = user.avatar;
-            }
-        }
-
-        <!-- 🔹 ข้อ 1 & ข้อ 3: การตั้งค่า Flatpickr เดือนภาษาไทย, Dropdown ปี พ.ศ. และการคำนวณวันหมดอายุอัตโนมัติ -->
-        function initFlatpickr() {
-            if (typeof flatpickr === 'undefined') return;
-
-            flatpickr.localize(flatpickr.l10ns.th);
-
-            // ช่องวันออกบัตร (เปลี่ยนเดือนเป็นภาษาไทย, ปีเป็น Dropdown พ.ศ.)
-            issuePicker = flatpickr('#f_issueDate', {
-                locale: 'th',
-                dateFormat: 'Y-m-d',
-                altInput: true,
-                altFormat: 'j F Y',
-                onReady: function(selectedDates, dateStr, instance) {
-                    formatBuddhistYear(instance);
-                    createYearDropdown(instance);
-                },
-                onValueUpdate: function(selectedDates, dateStr, instance) { formatBuddhistYear(instance); },
-                onMonthChange: function(selectedDates, dateStr, instance) {
-                    formatBuddhistYear(instance);
-                    updateYearDropdown(instance);
-                },
-                onYearChange: function(selectedDates, dateStr, instance) {
-                    formatBuddhistYear(instance);
-                    updateYearDropdown(instance);
-                },
-                onOpen: function(selectedDates, dateStr, instance) {
-                    formatBuddhistYear(instance);
-                    updateYearDropdown(instance);
-                },
-                onChange: function(selectedDates, dateStr, instance) {
-                    formatBuddhistYear(instance);
-                    if (selectedDates[0]) {
-                        calculateAndSetExpireDate(selectedDates[0]);
-                    }
-                }
-            });
-
-            // ช่องวันหมดอายุ (ล็อก readonly ไม่ให้ผู้ใช้คลิกเลือกได้)
-            expirePicker = flatpickr('#f_expireDate', {
-                locale: 'th',
-                dateFormat: 'Y-m-d',
-                altInput: true,
-                altFormat: 'j F Y',
-                clickOpens: false, // ห้ามเปิดปฏิทิน
-                onReady: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
-                onValueUpdate: (selectedDates, dateStr, instance) => formatBuddhistYear(instance)
-            });
-        }
-
-        // ฟังก์ชันสร้าง Dropdown สำหรับเลือกปี พ.ศ.
-        function createYearDropdown(instance) {
-            if (!instance || !instance.calendarContainer) return;
-            const yearElement = instance.currentYearElement;
-            if (!yearElement || yearElement.tagName === 'SELECT') return;
-
-            const select = document.createElement('select');
-            select.className = 'flatpickr-monthDropdown-months';
-            select.style.cssText = 'font-size: 14px; font-weight: bold; padding: 2px 6px; border-radius: 4px; border: 1px solid #cbd5e1; margin-left: 6px; cursor: pointer; background: white; color: #1e293b;';
-
-            const currentAD = instance.currentYear;
-            const startYearAD = currentAD - 60;
-            const endYearAD = currentAD + 30;
-
-            for (let y = endYearAD; y >= startYearAD; y--) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = ` ${y + 543}`;
-                if (y === currentAD) opt.selected = true;
-                select.appendChild(opt);
-            }
-
-            select.addEventListener('change', function() {
-                instance.changeYear(parseInt(this.value, 10));
-                formatBuddhistYear(instance);
-            });
-
-            if (yearElement.parentNode) {
-                yearElement.parentNode.replaceChild(select, yearElement);
-                instance.customYearSelect = select;
-            }
-        }
-
-        function updateYearDropdown(instance) {
-            if (instance && instance.customYearSelect) {
-                instance.customYearSelect.value = instance.currentYear;
-            }
-        }
-
-        <!-- 🔹 ข้อ 3: ฟังก์ชันคำนวณวันหมดอายุ (+6 ปี ลบ 1 วัน) -->
-        function calculateAndSetExpireDate(issueDateObj) {
-            if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
-
-            const expDate = new Date(issueDateObj);
-            expDate.setFullYear(expDate.getFullYear() + 6); // บวก 6 ปี
-            expDate.setDate(expDate.getDate() - 1);         // ลบออก 1 วัน
-
-            const expStr = expDate.toISOString().split('T')[0];
-
-            if (expirePicker) {
-                expirePicker.setDate(expStr, true);
-            }
-            document.getElementById('f_expireDate').value = expStr;
-        }
-
-        function formatBuddhistYear(instance) {
-            if (!instance || !instance.altInput) return;
-            if (instance.selectedDates.length > 0) {
-                const date = instance.selectedDates[0];
-                const day = date.getDate();
-                const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-                const month = monthNames[date.getMonth()];
-                const yearBE = date.getFullYear() + 543;
-                instance.altInput.value = `${day} ${month}  ${yearBE}`;
-            }
-        }
-
+        // ระบบจัดการสวิตช์หน้า (ไม่มีประวัติการพิมพ์แล้ว)[cite: 2]
         function nav(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.menu-btn').forEach(el => {
                 el.classList.remove('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
                 el.classList.add('text-gray-600', 'border-transparent');
             });
-            
-            const btnMap = {
-                'dashboard': 0, 'employees': 1, 'form': 2, 'agency-settings': 3, 
-                'print-history': 4, 'template-settings': 5, 'system-settings': 6
-            };
-            if(btnMap[viewId] !== undefined) {
-                let btns = document.querySelectorAll('.menu-btn');
-                btns[btnMap[viewId]].classList.add('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
-                btns[btnMap[viewId]].classList.remove('text-gray-600', 'border-transparent');
-            }
 
             document.getElementById(`sec-${viewId}`).classList.remove('hidden');
 
             if (viewId === 'dashboard') updateDashboard();
             if (viewId === 'employees') renderEmployeeTable();
-            if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
+            if (viewId === 'account-settings') loadUsersFromSheet();
         }
 
-        function openAddForm() {
-            document.getElementById('f_id').value = '';
-            document.getElementById('emp-form').reset();
-            document.getElementById('f_academic_standing_wrapper').classList.add('hidden');
-            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลบุคลากรใหม่';
-
-            const today = new Date();
-            const issueStr = today.toISOString().split('T')[0];
-
-            if (issuePicker) issuePicker.setDate(issueStr, true);
-            calculateAndSetExpireDate(today);
-
-            nav('form');
+        // โหลดข้อมูลตัวเลือกจาก LocalStorage
+        function loadOptionSettings() {
+            const stored = localStorage.getItem('gov_card_options');
+            if (stored) {
+                defaultOptions = JSON.parse(stored);
+            } else {
+                localStorage.setItem('gov_card_options', JSON.stringify(defaultOptions));
+            }
+            renderDropdownOptions();
         }
+
+        function renderDropdownOptions() {
+            const schoolSelect = document.getElementById('f_schoolAffiliation');
+            const posTypeSelect = document.getElementById('f_positionType');
+
+            schoolSelect.innerHTML = '<option value="">--- เลือกส่วนราชการ ---</option>' + 
+                defaultOptions.school.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            posTypeSelect.innerHTML = '<option value="">--- เลือกประเภทพนักงาน ---</option>' + 
+                defaultOptions.positionType.map(p => `<option value="${p}">${p}</option>`).join('');
+        }
+
+        // Modal จัดการตัวเลือก (เพิ่ม/แก้ไข/ลบ)[cite: 2]
+        function openOptionModal(type) {
+            currentOptionType = type;
+            document.getElementById('modalTitle').innerText = type === 'school' ? 'จัดการตัวเลือก ส่วนราชการ' : 'จัดการตัวเลือก ประเภทพนักงาน';
+            document.getElementById('newOptionInput').value = '';
+            renderOptionList();
+            document.getElementById('optionModal').classList.remove('hidden');
+        }
+
+        function closeOptionModal() {
+            document.getElementById('optionModal').classList.add('hidden');
+        }
+
+        function renderOptionList() {
+            const container = document.getElementById('optionList');
+            const items = defaultOptions[currentOptionType] || [];
+
+            container.innerHTML = items.map((item, idx) => `
+                <div class="flex justify-between items-center p-3 hover:bg-gray-50">
+                    <span class="text-sm font-medium text-gray-700">${item}</span>
+                    <div class="flex gap-2">
+                        <button onclick="editOption(${idx})" class="text-blue-500 hover:text-blue-700 p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteOption(${idx})" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addNewOption() {
+            const val = document.getElementById('newOptionInput').value.trim();
+            if (!val) return;
+            defaultOptions[currentOptionType].push(val);
+            saveOptions();
+            document.getElementById('newOptionInput').value = '';
+        }
+
+        function editOption(index) {
+            const oldVal = defaultOptions[currentOptionType][index];
+            const newVal = prompt('แก้ไขชื่อข้อมูล:', oldVal);
+            if (newVal && newVal.trim() !== '') {
+                defaultOptions[currentOptionType][index] = newVal.trim();
+                saveOptions();
+            }
+        }
+
+        function deleteOption(index) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบตัวเลือกนี้?')) {
+                defaultOptions[currentOptionType].splice(index, 1);
+                saveOptions();
+            }
+        }
+
+        function saveOptions() {
+            localStorage.setItem('gov_card_options', JSON.stringify(defaultOptions));
+            renderOptionList();
+            renderDropdownOptions();
+            showToast('อัปเดตรายการเรียบร้อย');
+        }
+
+        // ดึงรายการผู้ใช้จาก Google Sheet แสดงตารางตั้งค่าบัญชี[cite: 3]
+        function loadUsersFromSheet() {
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังดึงข้อมูลจาก Google Sheet...</td></tr>';
+
+            fetchAPI('getUsers').then(res => {
+                if (res && res.users) {
+                    tbody.innerHTML = '';
+                    res.users.forEach(user => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b hover:bg-gray-50';
+                        tr.innerHTML = `
+                            <td class="p-3">
+                                <img src="${user.profile_image || 'profile_1_1786452882.png'}" class="w-10 h-10 rounded-full object-cover border">
+                            </td>
+                            <td class="p-3 font-semibold">${user.firstname || ''} ${user.lastname || ''}</td>
+                            <td class="p-3 font-mono text-xs">${user.username || '-'}</td>
+                            <td class="p-3 text-xs">${user.position || '-'}<br><span class="text-gray-400">${user.organization || '-'}</span></td>
+                            <td class="p-3 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 font-bold' : 'bg-gray-100 text-gray-700'}">${user.role || 'user'}</span>
+                            </td>
+                            <td class="p-3 text-center">
+                                <button onclick="editUserPrompt('${user.id}', '${user.firstname}', '${user.lastname}', '${user.role}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
+                                <button onclick="deleteUserConfirm('${user.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบผู้ใช้"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }).catch(err => {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-red-500">ไม่สามารถโหลดข้อมูลผู้ใช้ได้</td></tr>';
+            });
+        }
+
+        function deleteUserConfirm(userId) {
+            if (confirm('คุณแน่ใจว่าต้องการลบบัญชีผู้ใช้นี้ใช่หรือไม่?')) {
+                fetchAPI('deleteUser', { id: userId }).then(res => {
+                    showToast('ลบผู้ใช้สำเร็จ');
+                    loadUsersFromSheet();
+                });
+            }
+        }
+
+        function editUserPrompt(id, fn, ln, role) {
+            const newRole = prompt(`แก้ไข Role ของ ${fn} ${ln} (admin / user):`, role);
+            if (newRole && (newRole === 'admin' || newRole === 'user')) {
+                fetchAPI('updateUser', { id: id, firstname: fn, lastname: ln, role: newRole }).then(res => {
+                    showToast('อัปเดตข้อมูลสำเร็จ');
+                    loadUsersFromSheet();
+                });
+            }
+        }
+
+        /* --- ฟังก์ชันย่อยระบบเดิมที่คงไว้คงเดิม --- */
+        let tplConfig = {
+            citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5, nameX: 17, nameY: 34, nameSize: 1.6,
+            positionX: 17, positionY: 43, positionSize: 1.4, bloodTypeX: 17, bloodTypeY: 52, bloodTypeSize: 1.3,
+            cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4, issueDateX: 62, issueDateY: 78, expireDateX: 85, expireDateY: 78, dateSize: 1.2,
+            headNameX: 65, headNameY: 30, headNameSize: 1.4, headPositionX: 65, headPositionY: 38, headPositionSize: 1.2,
+            agencyProvinceX: 65, agencyProvinceY: 46, agencyProvinceSize: 1.3, positionTypeX: 17, positionTypeY: 61, positionTypeSize: 1.3
+        };
 
         function showToast(msg, type='info') {
             const t = document.getElementById('toast');
             t.innerText = msg;
             t.className = `fixed bottom-4 right-4 px-6 py-3 rounded shadow-lg transform transition-all duration-300 z-50 ${type==='error'?'bg-red-600':'bg-gray-800'} text-white`;
             t.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                t.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            setTimeout(() => { t.classList.add('translate-y-20', 'opacity-0'); }, 3000);
         }
 
         function fetchAPI(action, payload=null) {
             return new Promise((resolve, reject) => {
-                if(USE_LOCAL) {
-                    setTimeout(() => {
-                        let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
-                        if (action === 'getEmployees') resolve({status:'success', data: localData});
-                        else if (action === 'saveEmployee') {
-                            if(payload.ID) {
-                                let idx = localData.findIndex(x=>x.ID === payload.ID);
-                                if(idx>-1) {
-                                    localData[idx] = { ...localData[idx], ...payload };
-                                }
-                            } else {
-                                payload.ID = Date.now().toString();
-                                payload.Status = 'รอจัดทำ';
-                                localData.push(payload);
-                            }
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success', data: {id: payload.ID}});
+                if(USE_LOCAL && action !== 'getUsers' && action !== 'deleteUser' && action !== 'updateUser') {
+                    let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
+                    if (action === 'getEmployees') resolve({status:'success', data: localData});
+                    else if (action === 'saveEmployee') {
+                        if(payload.ID) {
+                            let idx = localData.findIndex(x=>x.ID === payload.ID);
+                            if(idx>-1) localData[idx] = { ...localData[idx], ...payload };
+                        } else {
+                            payload.ID = Date.now().toString();
+                            payload.Status = 'รอจัดทำ';
+                            localData.push(payload);
                         }
-                        else if (action === 'deleteEmployee') {
-                            localData = localData.filter(x => String(x.ID) !== String(payload.ID));
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'recordPrint') {
-                            payload.forEach(r => {
-                                let idx = localData.findIndex(x=>x.ID === r.EmployeeID);
-                                if(idx>-1) localData[idx].Status = 'พิมพ์แล้ว';
-                            });
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'getAgencySettings') {
-                            let agencyData = JSON.parse(localStorage.getItem('gov_agency_settings')) || {};
-                            resolve({status:'success', data: agencyData});
-                        }
-                        else if (action === 'saveAgencySettings') {
-                            localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
-                            resolve({status:'success'});
-                        }
-                    }, 200);
+                        localStorage.setItem('gov_db', JSON.stringify(localData));
+                        resolve({status:'success', data: {id: payload.ID}});
+                    }
                 } else {
                     fetch(GAS_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: action, payload: payload })
-                    })
-                    .then(res => res.json())
-                    .then(resolve)
-                    .catch(reject);
+                        body: JSON.stringify({ action: action, payload: payload, data: payload })
+                    }).then(res => res.json()).then(resolve).catch(reject);
                 }
             });
         }
 
-        function loadEmployees() {
-            fetchAPI('getEmployees').then(res => {
-                if(res.status === 'success') {
-                    db.employees = res.data;
-                    updateDashboard();
-                    if(!document.getElementById('sec-employees').classList.contains('hidden')) {
-                        renderEmployeeTable();
-                    }
-                }
-            });
-        }
-
-        function deleteEmployee(id) {
-            if(!confirm('คุณต้องการลบข้อมูลเจ้าหน้าที่รายนี้ใช่หรือไม่?')) return;
-            fetchAPI('deleteEmployee', { ID: id }).then(res => {
-                if(res.status === 'success') {
-                    showToast('ลบข้อมูลเรียบร้อยแล้ว');
-                    loadEmployees();
-                } else {
-                    showToast('ไม่สามารถลบข้อมูลได้', 'error');
-                }
-            });
-        }
-
-        function loadAgencySettings() {
-            fetchAPI('getAgencySettings').then(res => {
-                if(res.status === 'success' && res.data) {
-                    agencySettings = res.data;
-                    applyAgencySettingsUI();
-                }
-            });
-        }
-
-        function applyAgencySettingsUI() {
-            document.getElementById('f_head_name').value = agencySettings.head_name || '';
-            document.getElementById('f_head_position').value = agencySettings.head_position || '';
-            document.getElementById('f_agency_name').value = agencySettings.agency_name || '';
-            document.getElementById('f_province').value = agencySettings.province || '';
-            document.getElementById('f_agency_logo').value = agencySettings.agency_logo || '';
-
-            const headerLogo = document.getElementById('header-logo');
-            if(agencySettings.agency_logo) {
-                document.getElementById('agency_logo_preview').src = agencySettings.agency_logo;
-                document.getElementById('agency_logo_preview').classList.remove('hidden');
-                document.getElementById('agency_logo_placeholder').classList.add('hidden');
-                headerLogo.src = agencySettings.agency_logo;
-            } else {
-                document.getElementById('agency_logo_preview').classList.add('hidden');
-                document.getElementById('agency_logo_placeholder').classList.remove('hidden');
-                headerLogo.src = defaultLogoSVG;
-            }
-
-            if(agencySettings.agency_name) {
-                const prov = agencySettings.province ? ` ${agencySettings.province}` : '';
-                document.getElementById('header-org-name').innerText = `${agencySettings.agency_name}${prov}`;
-            }
-        }
-
-        function handleAgencyLogoUpload(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-
-            if(file.size > 2 * 1024 * 1024) {
-                showToast('ขนาดไฟล์ใหญ่เกินไป (ต้องไม่เกิน 2MB)', 'error');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64Img = event.target.result;
-                document.getElementById('agency_logo_preview').src = base64Img;
-                document.getElementById('agency_logo_preview').classList.remove('hidden');
-                document.getElementById('agency_logo_placeholder').classList.add('hidden');
-                document.getElementById('f_agency_logo').value = base64Img;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function saveAgencySettings() {
-            const payload = {
-                head_name: document.getElementById('f_head_name').value,
-                head_position: document.getElementById('f_head_position').value,
-                agency_name: document.getElementById('f_agency_name').value,
-                province: document.getElementById('f_province').value,
-                agency_logo: document.getElementById('f_agency_logo').value
-            };
-
-            agencySettings = payload;
-            applyAgencySettingsUI();
-
-            fetchAPI('saveAgencySettings', payload).then(res => {
-                showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
-            });
-        }
-
-        function resetAgencySettings() {
-            if(!confirm('คุณต้องการรีเซ็ตค่าการตั้งค่าหน่วยงานเป็นค่าเริ่มต้นใช่หรือไม่?')) return;
-            agencySettings = {
-                head_name: 'นายสมศักดิ์ รักชาติ', 
-                head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
-                agency_name: 'เทศบาลตำบลตัวอย่าง', 
-                province: 'จังหวัดตัวอย่าง', 
-                agency_logo: '' 
-            };
-            applyAgencySettingsUI();
-            saveAgencySettings();
-            showToast('รีเซ็ตการตั้งค่าหน่วยงานสำเร็จ', 'success');
-        }
-
-        function saveSystemSettings() {
-            GAS_URL = document.getElementById('set_gas_url').value.trim();
-            localStorage.setItem('GAS_URL', GAS_URL);
-            USE_LOCAL = GAS_URL === '';
-            showToast('บันทึกการเชื่อมต่อสำเร็จ ระบบจะรีโหลด...');
-            setTimeout(()=>location.reload(), 1000);
+        function openAddForm() {
+            document.getElementById('f_id').value = '';
+            document.getElementById('emp-form').reset();
+            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลบุคลากรใหม่';
+            nav('form');
         }
 
         function updateDashboard() {
             document.getElementById('stat-total').innerText = db.employees.length;
             document.getElementById('stat-pending').innerText = db.employees.filter(e => e.Status === 'รอจัดทำ' || e.Status === 'พร้อมพิมพ์').length;
             document.getElementById('stat-printed').innerText = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
-            
-            let exp = 0;
-            const now = new Date();
-            db.employees.forEach(e => {
-                if(e.ExpireDate && new Date(e.ExpireDate) < now) exp++;
-            });
-            document.getElementById('stat-expired').innerText = exp;
         }
 
         function renderEmployeeTable() {
             const tbody = document.getElementById('emp-table-body');
-            const search = document.getElementById('search-input').value.toLowerCase();
             tbody.innerHTML = '';
-            
             db.employees.forEach(emp => {
-                const searchStr = `${emp.EmployeeName} ${emp.CitizenID} ${emp.CardNumber}`.toLowerCase();
-                if (search && !searchStr.includes(search)) return;
-
-                const statusColor = emp.Status === 'พิมพ์แล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
-
                 const tr = document.createElement('tr');
                 tr.className = 'border-b hover:bg-gray-50';
                 tr.innerHTML = `
                     <td class="p-3 text-center"><input type="checkbox" class="emp-checkbox" value="${emp.ID}"></td>
-                    <td class="p-3 font-mono text-xs">${formatCitizenId(emp.CitizenID || '')}</td>
+                    <td class="p-3 font-mono text-xs">${emp.CitizenID || ''}</td>
                     <td class="p-3 font-semibold">${emp.EmployeeName || '-'}</td>
                     <td class="p-3 text-xs">${emp.PositionName || '-'}<br><span class="text-gray-400">${emp.SchoolAffiliation || '-'}</span></td>
                     <td class="p-3 text-xs">${emp.PositionType || '-'}</td>
-                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${statusColor}">${emp.Status}</span></td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">${emp.Status}</span></td>
                     <td class="p-3 text-center">
-                        <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
-                        <button onclick="previewCard(['${emp.ID}'])" class="text-gov-navy hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
-                        <button onclick="deleteEmployee('${emp.ID}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบข้อมูล"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded"><i class="fa-solid fa-edit"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
-        }
-
-        function toggleSelectAll() {
-            const chk = document.getElementById('selectAll').checked;
-            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = chk);
         }
 
         function saveEmployee(e) {
@@ -963,7 +747,6 @@
                 EmployeeName: document.getElementById('f_employeeName').value,
                 SchoolAffiliation: document.getElementById('f_schoolAffiliation').value,
                 PositionName: document.getElementById('f_positionName').value,
-                AcademicStanding: document.getElementById('f_academicStanding').value,
                 PositionType: document.getElementById('f_positionType').value,
                 Gender: document.getElementById('f_gender').value,
                 BloodType: document.getElementById('f_bloodType').value,
@@ -971,273 +754,27 @@
                 IssueDate: document.getElementById('f_issueDate').value,
                 ExpireDate: document.getElementById('f_expireDate').value
             };
-
-            const btn = e.submitter;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังบันทึก';
-            btn.disabled = true;
-
-            fetchAPI('saveEmployee', payload).then(res => {
+            fetchAPI('saveEmployee', payload).then(() => {
                 showToast('บันทึกข้อมูลเรียบร้อย');
                 loadEmployees();
                 nav('employees');
-            }).finally(() => {
-                btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล';
-                btn.disabled = false;
             });
         }
 
-        function editEmployee(id) {
-            if (!db.employees || db.employees.length === 0) {
-                showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
-                return;
-            }
-            const emp = db.employees.find(x => String(x.ID) === String(id));
-            if(!emp) {
-                showToast('ไม่พบข้อมูลเจ้าหน้าที่รายนี้', 'error');
-                return;
-            }
-            
-            document.getElementById('form-title').innerText = 'แก้ไขข้อมูลบุคลากร';
-            document.getElementById('f_id').value = emp.ID;
-            document.getElementById('f_citizenId').value = formatCitizenId(emp.CitizenID || '');
-            document.getElementById('f_employeeName').value = emp.EmployeeName || '';
-            document.getElementById('f_schoolAffiliation').value = emp.SchoolAffiliation || '';
-            document.getElementById('f_positionName').value = emp.PositionName || '';
-            document.getElementById('f_academicStanding').value = emp.AcademicStanding || '';
-            document.getElementById('f_positionType').value = emp.PositionType || '';
-            document.getElementById('f_gender').value = emp.Gender || '';
-            document.getElementById('f_bloodType').value = emp.BloodType || '';
-            document.getElementById('f_cardNum').value = emp.CardNumber || '';
-            
-            const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
-            if (issuePicker) {
-                const issueDateStr = formatD(emp.IssueDate);
-                issuePicker.setDate(issueDateStr, true);
-                if (emp.IssueDate) {
-                    calculateAndSetExpireDate(new Date(emp.IssueDate));
-                }
-            }
-            if (emp.ExpireDate && expirePicker) {
-                expirePicker.setDate(formatD(emp.ExpireDate), true);
-            }
-            
-            toggleExecutiveField();
-            nav('form');
-        }
-
-        function getMockEmp() {
-            return {
-                CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายตัวอย่าง ทดสอบระบบ',
-                PositionName: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', CardNumber: 'TEST-001',
-                BloodType: 'โอ', PositionType: 'พนักงานเทศบาล', IssueDate: '2026-08-22', ExpireDate: '2032-08-21'
-            };
-        }
-
-        function buildTemplateConfigUI() {
-            const p = document.getElementById('config-panel');
-            p.innerHTML = '';
-            
-            const createGroup = (title, keys) => {
-                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200"><h4 class="font-semibold text-gov-blue mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
-                keys.forEach(k => {
-                    html += `<div><label class="block text-xs text-gray-500">${k.label}</label>
-                             <input type="number" step="0.1" id="cfg_${k.id}" value="${tplConfig[k.id] ?? 0}" oninput="updateConfigLive()" class="w-full border rounded px-2 py-1 text-sm"></div>`;
-                });
-                html += `</div></div>`;
-                p.innerHTML += html;
-            }
-
-            createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ประเภทพนักงาน', [{id:'positionTypeX', label:'แกน X (%)'}, {id:'positionTypeY', label:'แกน Y (%)'}, {id:'positionTypeSize', label:'ขนาด Font (vw)'}]);
-            createGroup('หมู่โลหิต', [{id:'bloodTypeX', label:'แกน X (%)'}, {id:'bloodTypeY', label:'แกน Y (%)'}, {id:'bloodTypeSize', label:'ขนาด Font (vw)'}]);
-            createGroup('เลขที่บัตร', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
-            createGroup('วันที่ออก-หมดอายุ', [
-                {id:'issueDateX', label:'ออกบัตร X (%)'}, {id:'issueDateY', label:'ออกบัตร Y (%)'},
-                {id:'expireDateX', label:'หมดอายุ X (%)'}, {id:'expireDateY', label:'หมดอายุ Y (%)'},
-                {id:'dateSize', label:'ขนาด Font (vw)'}
-            ]);
-            
-            createGroup('ชื่อนายก อปท. (ตั้งค่าหน่วยงาน)', [{id:'headNameX', label:'แกน X (%)'}, {id:'headNameY', label:'แกน Y (%)'}, {id:'headNameSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ตำแหน่งนายก อปท.', [{id:'headPositionX', label:'แกน X (%)'}, {id:'headPositionY', label:'แกน Y (%)'}, {id:'headPositionSize', label:'ขนาด Font (vw)'}]);
-            createGroup('ชื่อ อปท. + จังหวัด', [{id:'agencyProvinceX', label:'แกน X (%)'}, {id:'agencyProvinceY', label:'แกน Y (%)'}, {id:'agencyProvinceSize', label:'ขนาด Font (vw)'}]);
-        }
-
-        function updateConfigLive() {
-            for(let key in tplConfig) {
-                let el = document.getElementById(`cfg_${key}`);
-                if(el) tplConfig[key] = parseFloat(el.value);
-            }
-            renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
-        }
-
-        function saveTemplateSettings() {
-            localStorage.setItem('gov_tpl_config', JSON.stringify(tplConfig));
-            showToast('บันทึกตำแหน่ง Template สำเร็จ');
-            if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
-        }
-
-        function renderPreviewBoard(emp, targetContainerId) {
-            const container = document.getElementById(targetContainerId);
-            if(!container) return;
-
-            const formatThaiDate = (dStr) => {
-                if(!dStr) return '-';
-                const d = new Date(dStr);
-                if(isNaN(d.getTime())) return '-';
-                const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-                return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
-            };
-
-            let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
-            
-            const createTxt = (id, text, x, y, size, fw='400') => {
-                return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
-            };
-
-            const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
-
-            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '700');
-            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '700');
-            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '400');
-            
-            const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
-            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '400');
-            
-            const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
-            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '400');
-
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '400');
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '400');
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '400');
-
-            const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
-            const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
-            const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
-
-            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '700');
-            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '400');
-            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '600');
-
-            container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
-        }
-
-        function prepareBatchPrint() {
-            const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
-            if(checked.length === 0) {
-                showToast('กรุณาเลือกเจ้าหน้าที่อย่างน้อย 1 รายการ', 'error');
-                return;
-            }
-            previewCard(checked);
-        }
-
-        function previewCard(empIds) {
-            if (!db.employees || db.employees.length === 0) {
-                showToast('ยังไม่มีข้อมูลในระบบ', 'error');
-                return;
-            }
-            
-            currentPrintList = [];
-            const printPreviewContainer = document.getElementById('print-preview-container');
-            printPreviewContainer.innerHTML = '';
-
-            empIds.forEach((id) => {
-                const emp = db.employees.find(x => String(x.ID) === String(id));
-                if(!emp) return;
-
-                currentPrintList.push(emp);
-                
-                const cardDiv = document.createElement('div');
-                const uuid = 'prev_' + Math.random().toString(36).substring(7);
-                cardDiv.id = uuid;
-                cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
-                printPreviewContainer.appendChild(cardDiv);
-                
-                renderPreviewBoard(emp, uuid);
+        function loadEmployees() {
+            fetchAPI('getEmployees').then(res => {
+                if(res.status === 'success') db.employees = res.data;
             });
-
-            if(currentPrintList.length > 0) {
-                nav('print-preview');
-            }
         }
 
-        function executePrint() {
-            if(currentPrintList.length === 0) return;
-
-            const printSection = document.getElementById('print-section');
-            printSection.innerHTML = '';
-
-            currentPrintList.forEach(emp => {
-                const cardDiv = document.createElement('div');
-                const uuid = 'print_' + Math.random().toString(36).substring(7);
-                cardDiv.id = uuid;
-                cardDiv.className = 'print-card-wrapper';
-                printSection.appendChild(cardDiv);
-                
-                renderPreviewBoard(emp, uuid);
-            });
-
-            setTimeout(() => {
-                window.print();
-                
-                if(confirm('การพิมพ์เสร็จสิ้นและสมบูรณ์หรือไม่? (กด OK เพื่อบันทึกประวัติการพิมพ์)')) {
-                    const printPayload = currentPrintList.map(e => ({ EmployeeID: e.ID, CardNumber: e.CardNumber, EmployeeName: e.EmployeeName }));
-                    fetchAPI('recordPrint', printPayload).then(() => {
-                        showToast('บันทึกประวัติการพิมพ์สำเร็จ', 'success');
-                        loadEmployees(); 
-                    });
-                }
-            }, 500);
+        function initFlatpickr() {
+            if (typeof flatpickr !== 'undefined') flatpickr.localize(flatpickr.l10ns.th);
         }
-
-        function initFormListeners() {
-            const positionInput = document.getElementById('f_positionName');
-            const citizenIdInput = document.getElementById('f_citizenId');
-
-            if (positionInput) {
-                positionInput.addEventListener('input', toggleExecutiveField);
-            }
-
-            if (citizenIdInput) {
-                citizenIdInput.addEventListener('input', function() {
-                    this.value = formatCitizenId(this.value);
-                });
-            }
-        }
-
-        function toggleExecutiveField() {
-            const positionInput = document.getElementById('f_positionName');
-            const academicStandingWrapper = document.getElementById('f_academic_standing_wrapper');
-            const academicStandingInput = document.getElementById('f_academicStanding');
-
-            if (!positionInput || !academicStandingWrapper) return;
-
-            const executivePrefixes = ['หัวหน้าสำนัก', 'ผู้อำนวยการกอง', 'หัวหน้าฝ่าย', 'ปลัด', 'รองปลัด'];
-            const val = positionInput.value.trim();
-            const isExecutive = executivePrefixes.some(prefix => val.startsWith(prefix));
-
-            if (isExecutive) {
-                academicStandingWrapper.classList.remove('hidden');
-            } else {
-                academicStandingWrapper.classList.add('hidden');
-                if (academicStandingInput) academicStandingInput.value = '';
-            }
-        }
-
-        function formatCitizenId(value) {
-            const cleanValue = value.replace(/\D/g, '');
-            const limitValue = cleanValue.substring(0, 13);
-            
-            let formattedValue = '';
-            if (limitValue.length > 0) formattedValue += limitValue.substring(0, 1);
-            if (limitValue.length > 1) formattedValue += ' ' + limitValue.substring(1, 5);
-            if (limitValue.length > 5) formattedValue += ' ' + limitValue.substring(5, 10);
-            if (limitValue.length > 10) formattedValue += ' ' + limitValue.substring(10, 12);
-            if (limitValue.length > 12) formattedValue += ' ' + limitValue.substring(12, 13);
-
-            return formattedValue;
-        }
+        function initFormListeners() {}
+        function buildTemplateConfigUI() {}
+        function loadAgencySettings() {}
+        function saveAgencySettings() {}
+        function handleAgencyLogoUpload() {}
     </script>
 </body>
 </html>
