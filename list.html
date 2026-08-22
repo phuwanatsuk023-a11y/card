@@ -105,7 +105,7 @@
                 <i id="header-logo-icon" data-lucide="building-2" class="w-6 h-6 text-white"></i>
             </div>
             <div>
-                <h1 class="font-bold text-lg leading-tight">การจัดการข้อมูลบุคลากร</h1>
+                <h1 class="font-bold text-lg leading-tight">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
                 <p class="text-xs text-blue-100 font-light" id="header-org-name">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</p>
             </div>
         </div>
@@ -124,14 +124,7 @@
                 <div id="header-time" class="text-sm font-bold tracking-wider text-amber-300"></div>
             </div>
 
-            <!-- รูปโปรไฟล์ (วงกลม + Hover Effect) -->
-            <div class="relative flex items-center justify-center z-50">
-                <img id="header-user-avatar" 
-                     src="profile_1_1786452882.png" 
-                     alt="User Profile" 
-                     onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"
-                     class="w-10 h-10 rounded-full object-cover border-2 border-white/80 shadow-md transition-all duration-500 ease-out transform hover:scale-[3.5] hover:-translate-x-10 hover:translate-y-12 hover:shadow-2xl hover:z-50 cursor-pointer">
-            </div>
+           
 
             <!-- เมนูเพิ่มเติม (Kebab Menu) -->
             <div class="relative group">
@@ -140,10 +133,10 @@
                 </button>
                 <div id="kebab-dropdown" class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-50">
                     <div class="bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 text-gray-800">
-                        <a href="#" onclick="nav('account-settings'); return false;" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors">
+                        <!--a href="#" onclick="nav('account-settings'); return false;" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors">
                             <i data-lucide="user-cog" class="w-4 h-4 text-blue-600"></i>
                             <span>ตั้งค่าบัญชี</span>
-                        </a>
+                    </a-->
                         <hr class="my-1 border-gray-100">
                         <a href="#" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html'; return false;" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors">
                             <i data-lucide="log-out" class="w-4 h-4 text-red-600"></i>
