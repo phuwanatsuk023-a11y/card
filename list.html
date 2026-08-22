@@ -600,6 +600,7 @@
 
     <script>
         let GAS_URL = 'https://script.google.com/macros/s/AKfycbxumO_fFwaz3vNEt_VVxX9nEgy_OTx_7eQho3BQyuUrvzi94FFpEaE2IndeoEydfjUUXQ/exec';
+        let GAS_URL = localStorage.getItem('GAS_URL') || '';
         let USE_LOCAL = GAS_URL === '';
         
         // ข้อมูลหลักตัวเลือก Master Data (ส่วนราชการ & ประเภทพนักงาน)
