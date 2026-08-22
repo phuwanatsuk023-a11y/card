@@ -109,7 +109,7 @@
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold" id="header-user-name">ผู้ใช้งานระบบ</p>
+                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูล...</p>
                     <p class="text-xs text-gray-300" id="header-user-role">เจ้าหน้าที่</p>
                 </div>
                 <img id="header-user-avatar" src="profile_1_1786452882.png" alt="User Profile" class="w-11 h-11 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
@@ -149,7 +149,7 @@
             <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
                 <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-gov-gold shadow-sm">
                 <div>
-                    <p class="text-[8px] text-gray-800 text-sm">นายภูวนาท สุขประเสริฐ</p>
+                    <p class="font-semibold text-gray-800 text-sm">นายภูวนาท สุขประเสริฐ</p>
                     <p class="text-xs text-gray-500">ผู้พัฒนาระบบ</p>
                 </div>
                 <div class="mt-1 font-bold text-gray-400 text-[11px] tracking-wider uppercase">GovCard Pro v1.0</div>
@@ -330,11 +330,11 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white">
+                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white cursor-pointer">
                                 </div>
                                 <div>
-                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_expireDate" required placeholder="เลือกวันที่บัตรหมดอายุ" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white">
+                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-xs text-gray-400">(คำนวณ +6 ปี -1 วัน อัตโนมัติ)</span></label>
+                                    <input type="text" id="f_expireDate" required placeholder="คำนวณอัตโนมัติ" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed focus:outline-none">
                                 </div>
                             </div>
                         </div>
@@ -471,7 +471,7 @@
         let db = { employees: [] }; 
         if(USE_LOCAL && !localStorage.getItem('gov_db')) {
             localStorage.setItem('gov_db', JSON.stringify([{
-                ID: '1', CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายสมชาย ใจดี', SchoolAffiliation: 'สำนักเทคโนโลยีสารสนเทศ', PositionName: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', AcademicStanding: '', PositionType: 'พนักงานเทศบาล', Gender: 'ชาย', BloodType: 'โอ', CardNumber: 'C001/2569', IssueDate: '2026-08-22', ExpireDate: '2032-08-22', Status: 'พร้อมพิมพ์'
+                ID: '1', CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายสมชาย ใจดี', SchoolAffiliation: 'สำนักเทคโนโลยีสารสนเทศ', PositionName: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', AcademicStanding: '', PositionType: 'พนักงานเทศบาล', Gender: 'ชาย', BloodType: 'โอ', CardNumber: 'C001/2569', IssueDate: '2026-08-22', ExpireDate: '2032-08-21', Status: 'พร้อมพิมพ์'
             }]));
         }
 
@@ -517,66 +517,161 @@
             initFlatpickr();
         };
 
+        <!-- 🔹 ข้อ 2: โหลดข้อมูลโปรไฟล์ Header จาก Google Sheet via GAS -->
         function loadCurrentUserInfo() {
             const rawUser = sessionStorage.getItem('currentUser');
-            let user = { name: 'นายภูวนาท สุขประเสริฐ', role: 'ผู้พัฒนาระบบ', avatar: 'profile_1_1786452882.png' };
+            let user = { name: 'ผู้ใช้งานระบบ', role: 'เจ้าหน้าที่', avatar: 'profile_1_1786452882.png' };
+            let userKey = '';
+
             if (rawUser) {
                 try {
                     const parsed = JSON.parse(rawUser);
                     if (typeof parsed === 'object' && parsed !== null) {
                         user = { ...user, ...parsed };
+                        userKey = parsed.username || parsed.email || parsed.name || rawUser;
                     } else {
                         user.name = rawUser;
+                        userKey = rawUser;
                     }
                 } catch(e) {
                     user.name = rawUser;
+                    userKey = rawUser;
                 }
             }
-            document.getElementById('header-user-name').innerText = user.name || 'ผู้ใช้งานระบบ';
-            document.getElementById('header-user-role').innerText = user.role || 'เจ้าหน้าที่';
-            if (user.avatar) {
+
+            renderHeaderUser(user);
+
+            // หากเชื่อมต่อ Google Apps Script ให้ดึงข้อมูลล่าสุดจาก Google Sheet
+            if (!USE_LOCAL && GAS_URL) {
+                fetchAPI('getUserInfo', { userKey: userKey }).then(res => {
+                    if (res && res.status === 'success' && res.data) {
+                        const sheetUser = {
+                            name: res.data.name || res.data.EmployeeName || user.name,
+                            role: res.data.role || res.data.PositionName || user.role,
+                            avatar: res.data.avatar || res.data.photo || user.avatar
+                        };
+                        renderHeaderUser(sheetUser);
+                    }
+                }).catch(err => {
+                    console.warn('ไม่สามารถดึงข้อมูลโปรไฟล์จาก Google Sheet ได้ ใช้ข้อมูลจาก Session:', err);
+                });
+            }
+        }
+
+        function renderHeaderUser(user) {
+            if (document.getElementById('header-user-name')) {
+                document.getElementById('header-user-name').innerText = user.name || 'ผู้ใช้งานระบบ';
+            }
+            if (document.getElementById('header-user-role')) {
+                document.getElementById('header-user-role').innerText = user.role || 'เจ้าหน้าที่';
+            }
+            if (document.getElementById('header-user-avatar') && user.avatar) {
                 document.getElementById('header-user-avatar').src = user.avatar;
             }
         }
 
+        <!-- 🔹 ข้อ 1 & ข้อ 3: การตั้งค่า Flatpickr เดือนภาษาไทย, Dropdown ปี พ.ศ. และการคำนวณวันหมดอายุอัตโนมัติ -->
         function initFlatpickr() {
             if (typeof flatpickr === 'undefined') return;
 
             flatpickr.localize(flatpickr.l10ns.th);
 
-            const commonConfig = {
+            // ช่องวันออกบัตร (เปลี่ยนเดือนเป็นภาษาไทย, ปีเป็น Dropdown พ.ศ.)
+            issuePicker = flatpickr('#f_issueDate', {
                 locale: 'th',
                 dateFormat: 'Y-m-d',
                 altInput: true,
                 altFormat: 'j F Y',
-                onReady: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
-                onValueUpdate: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
-                onMonthChange: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
-                onYearChange: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
-                onOpen: (selectedDates, dateStr, instance) => formatBuddhistYear(instance)
-            };
-
-            issuePicker = flatpickr('#f_issueDate', {
-                ...commonConfig,
+                onReady: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    createYearDropdown(instance);
+                },
+                onValueUpdate: function(selectedDates, dateStr, instance) { formatBuddhistYear(instance); },
+                onMonthChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    updateYearDropdown(instance);
+                },
+                onYearChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    updateYearDropdown(instance);
+                },
+                onOpen: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    updateYearDropdown(instance);
+                },
                 onChange: function(selectedDates, dateStr, instance) {
                     formatBuddhistYear(instance);
                     if (selectedDates[0]) {
-                        const expD = new Date(selectedDates[0]);
-                        expD.setFullYear(expD.getFullYear() + 6);
-                        if (expirePicker) {
-                            const expStr = expD.toISOString().split('T')[0];
-                            expirePicker.setDate(expStr, true);
-                        }
+                        calculateAndSetExpireDate(selectedDates[0]);
                     }
                 }
             });
 
+            // ช่องวันหมดอายุ (ล็อก readonly ไม่ให้ผู้ใช้คลิกเลือกได้)
             expirePicker = flatpickr('#f_expireDate', {
-                ...commonConfig,
-                onChange: function(selectedDates, dateStr, instance) {
-                    formatBuddhistYear(instance);
-                }
+                locale: 'th',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'j F Y',
+                clickOpens: false, // ห้ามเปิดปฏิทิน
+                onReady: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onValueUpdate: (selectedDates, dateStr, instance) => formatBuddhistYear(instance)
             });
+        }
+
+        // ฟังก์ชันสร้าง Dropdown สำหรับเลือกปี พ.ศ.
+        function createYearDropdown(instance) {
+            if (!instance || !instance.calendarContainer) return;
+            const yearElement = instance.currentYearElement;
+            if (!yearElement || yearElement.tagName === 'SELECT') return;
+
+            const select = document.createElement('select');
+            select.className = 'flatpickr-monthDropdown-months';
+            select.style.cssText = 'font-size: 14px; font-weight: bold; padding: 2px 6px; border-radius: 4px; border: 1px solid #cbd5e1; margin-left: 6px; cursor: pointer; background: white; color: #1e293b;';
+
+            const currentAD = instance.currentYear;
+            const startYearAD = currentAD - 60;
+            const endYearAD = currentAD + 30;
+
+            for (let y = endYearAD; y >= startYearAD; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = `พ.ศ. ${y + 543}`;
+                if (y === currentAD) opt.selected = true;
+                select.appendChild(opt);
+            }
+
+            select.addEventListener('change', function() {
+                instance.changeYear(parseInt(this.value, 10));
+                formatBuddhistYear(instance);
+            });
+
+            if (yearElement.parentNode) {
+                yearElement.parentNode.replaceChild(select, yearElement);
+                instance.customYearSelect = select;
+            }
+        }
+
+        function updateYearDropdown(instance) {
+            if (instance && instance.customYearSelect) {
+                instance.customYearSelect.value = instance.currentYear;
+            }
+        }
+
+        <!-- 🔹 ข้อ 3: ฟังก์ชันคำนวณวันหมดอายุ (+6 ปี ลบ 1 วัน) -->
+        function calculateAndSetExpireDate(issueDateObj) {
+            if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
+
+            const expDate = new Date(issueDateObj);
+            expDate.setFullYear(expDate.getFullYear() + 6); // บวก 6 ปี
+            expDate.setDate(expDate.getDate() - 1);         // ลบออก 1 วัน
+
+            const expStr = expDate.toISOString().split('T')[0];
+
+            if (expirePicker) {
+                expirePicker.setDate(expStr, true);
+            }
+            document.getElementById('f_expireDate').value = expStr;
         }
 
         function formatBuddhistYear(instance) {
@@ -587,7 +682,7 @@
                 const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
                 const month = monthNames[date.getMonth()];
                 const yearBE = date.getFullYear() + 543;
-                instance.altInput.value = `${day} ${month}  ${yearBE}`;
+                instance.altInput.value = `${day} ${month} พ.ศ. ${yearBE}`;
             }
         }
 
@@ -623,13 +718,9 @@
 
             const today = new Date();
             const issueStr = today.toISOString().split('T')[0];
-            
-            const expireDate = new Date(today);
-            expireDate.setFullYear(expireDate.getFullYear() + 6);
-            const expireStr = expireDate.toISOString().split('T')[0];
 
             if (issuePicker) issuePicker.setDate(issueStr, true);
-            if (expirePicker) expirePicker.setDate(expireStr, true);
+            calculateAndSetExpireDate(today);
 
             nav('form');
         }
@@ -919,8 +1010,16 @@
             document.getElementById('f_cardNum').value = emp.CardNumber || '';
             
             const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
-            if (issuePicker) issuePicker.setDate(formatD(emp.IssueDate), true);
-            if (expirePicker) expirePicker.setDate(formatD(emp.ExpireDate), true);
+            if (issuePicker) {
+                const issueDateStr = formatD(emp.IssueDate);
+                issuePicker.setDate(issueDateStr, true);
+                if (emp.IssueDate) {
+                    calculateAndSetExpireDate(new Date(emp.IssueDate));
+                }
+            }
+            if (emp.ExpireDate && expirePicker) {
+                expirePicker.setDate(formatD(emp.ExpireDate), true);
+            }
             
             toggleExecutiveField();
             nav('form');
@@ -930,7 +1029,7 @@
             return {
                 CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายตัวอย่าง ทดสอบระบบ',
                 PositionName: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', CardNumber: 'TEST-001',
-                BloodType: 'โอ', PositionType: 'พนักงานเทศบาล', IssueDate: '2026-08-22', ExpireDate: '2032-08-22'
+                BloodType: 'โอ', PositionType: 'พนักงานเทศบาล', IssueDate: '2026-08-22', ExpireDate: '2032-08-21'
             };
         }
 
