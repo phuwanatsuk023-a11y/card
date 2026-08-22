@@ -160,7 +160,7 @@
                     <i class="fa-solid fa-chart-pie w-5"></i> <span>Dashboard</span>
                 </a>
                 <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
-                    <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลเจ้าหน้าที่</span>
+                    <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลพนักงาน</span>
                 </a>
                 <a href="#" onclick="openAddForm()" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-user-plus w-5"></i> <span>เพิ่มข้อมูลใหม่</span>
@@ -249,7 +249,7 @@
             <!-- Employees Table Section -->
             <section id="sec-employees" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-blue-900">ข้อมูลเจ้าหน้าที่</h2>
+                    <h2 class="text-2xl font-bold text-blue-900">ข้อมูลพนักงาน</h2>
                     <div class="flex gap-2">
                         <button onclick="openAddForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
                         <button onclick="prepareBatchPrint()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-print"></i> พิมพ์รายการที่เลือก</button>
@@ -1215,7 +1215,7 @@
         }
 
         function deleteEmployee(id) {
-            if(!confirm('คุณต้องการลบข้อมูลเจ้าหน้าที่รายนี้ใช่หรือไม่?')) return;
+            if(!confirm('คุณต้องการลบข้อมูลพนักงานรายนี้ใช่หรือไม่?')) return;
             fetchAPI('deleteEmployee', { ID: id }).then(res => {
                 if(res.status === 'success') {
                     showToast('ลบข้อมูลเรียบร้อยแล้ว');
@@ -1414,7 +1414,7 @@
             }
             const emp = db.employees.find(x => String(x.ID) === String(id));
             if(!emp) {
-                showToast('ไม่พบข้อมูลเจ้าหน้าที่รายนี้', 'error');
+                showToast('ไม่พบข้อมูลพนักงานรายนี้', 'error');
                 return;
             }
             
