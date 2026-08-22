@@ -627,7 +627,6 @@
             agency_logo: '' 
         };
 
-        // 🟢 1. แก้ไขวัตถุ tplConfig เพิ่มพิกัด academicStandingX, academicStandingY, academicStandingSize
         let tplConfig = {
             citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
             nameX: 17, nameY: 34, nameSize: 1.6,
@@ -664,7 +663,6 @@
             initFlatpickr();
         };
 
-        <!-- 🔹 โหลดข้อมูลโปรไฟล์ Header & ตรวจสอบ Role Admin -->
         function loadCurrentUserInfo() {
             const rawUser = sessionStorage.getItem('currentUser');
             let user = { name: 'ผู้ใช้งานระบบ', role: 'เจ้าหน้าที่', avatar: 'profile_1_1786452882.png' };
@@ -688,7 +686,6 @@
 
             renderHeaderUser(user);
 
-            // แสดงผลเมนู "ตั้งค่าบัญชี" เฉพาะผู้ที่มี Role เป็น admin
             if (user.role && String(user.role).toLowerCase() === 'admin') {
                 const adminMenu = document.getElementById('menu-account-settings');
                 if (adminMenu) adminMenu.classList.remove('hidden');
@@ -727,7 +724,6 @@
             }
         }
 
-        <!-- 🔹 Dropdown Master Data Management -->
         function populateMasterDropdowns() {
             const affSelect = document.getElementById('f_schoolAffiliation');
             if (affSelect) {
@@ -841,7 +837,6 @@
             showToast('ลบรายการเรียบร้อย');
         }
 
-        <!-- 🔹 จัดการบัญชีผู้ใช้ (Google Sheet Users) -->
         function loadUsersList() {
             const tbody = document.getElementById('users-table-body');
             tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังดึงข้อมูลจาก Google Sheet...</td></tr>';
@@ -932,7 +927,6 @@
             }).catch(err => showToast('ไม่สามารถลบข้อมูลได้', 'error'));
         }
 
-        <!-- 🔹 Flatpickr Init & Calculation -->
         function initFlatpickr() {
             if (typeof flatpickr === 'undefined') return;
 
@@ -1086,69 +1080,73 @@
         }
 
         /**
- * ปรับปรุง fetchAPI ให้แยกการทำงานตามประเภทของข้อมูล
- */
-function fetchAPI(action, payload = null) {
-    // 1. แยกกลุ่ม Actions สำหรับพนักงาน (LocalStorage)
-    const employeeActions = ['getEmployees', 'saveEmployee', 'deleteEmployee', 'recordPrint'];
-    
-    if (employeeActions.includes(action)) {
-        return handleLocalStorageEmployees(action, payload);
-    } 
+         * 🟢 ปรับปรุง fetchAPI รองรับทั้ง LocalStorage และ GAS
+         */
+        function fetchAPI(action, payload = null) {
+            // รวม action ที่ใช้ LocalStorage
+            const localActions = ['getEmployees', 'saveEmployee', 'deleteEmployee', 'recordPrint', 'getAgencySettings', 'saveAgencySettings'];
+            
+            if (localActions.includes(action)) {
+                return handleLocalStorageData(action, payload);
+            } 
 
-    // 2. กลุ่ม Actions สำหรับผู้ใช้งาน (Google Sheet ผ่าน GAS)
-    return handleGoogleSheetUsers(action, payload);
-}
-
-/**
- * ฟังก์ชันจัดการ LocalStorage สำหรับพนักงาน
- */
-function handleLocalStorageEmployees(action, payload) {
-    return new Promise((resolve) => {
-        let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
-
-        if (action === 'getEmployees') {
-            resolve({ status: 'success', data: localData });
-        } 
-        else if (action === 'saveEmployee') {
-            if (payload.ID) {
-                let idx = localData.findIndex(x => x.ID === payload.ID);
-                if (idx > -1) localData[idx] = { ...localData[idx], ...payload };
-            } else {
-                payload.ID = Date.now().toString();
-                payload.Status = 'รอจัดทำ';
-                localData.push(payload);
-            }
-            localStorage.setItem('gov_db', JSON.stringify(localData));
-            resolve({ status: 'success', data: { id: payload.ID } });
-        } 
-        else if (action === 'deleteEmployee') {
-            localData = localData.filter(x => String(x.ID) !== String(payload.ID));
-            localStorage.setItem('gov_db', JSON.stringify(localData));
-            resolve({ status: 'success' });
+            return handleGoogleSheetUsers(action, payload);
         }
-        else if (action === 'recordPrint') {
-            payload.forEach(r => {
-                let idx = localData.findIndex(x => x.ID === r.EmployeeID);
-                if (idx > -1) localData[idx].Status = 'พิมพ์แล้ว';
+
+        /**
+         * 🟢 ฟังก์ชันจัดการ LocalStorage ทั้งหมด
+         */
+        function handleLocalStorageData(action, payload) {
+            return new Promise((resolve) => {
+                let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
+
+                if (action === 'getEmployees') {
+                    resolve({ status: 'success', data: localData });
+                } 
+                else if (action === 'saveEmployee') {
+                    if (payload.ID) {
+                        let idx = localData.findIndex(x => x.ID === payload.ID);
+                        if (idx > -1) localData[idx] = { ...localData[idx], ...payload };
+                    } else {
+                        payload.ID = Date.now().toString();
+                        payload.Status = 'รอจัดทำ';
+                        localData.push(payload);
+                    }
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success', data: { id: payload.ID } });
+                } 
+                else if (action === 'deleteEmployee') {
+                    localData = localData.filter(x => String(x.ID) !== String(payload.ID));
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success' });
+                }
+                else if (action === 'recordPrint') {
+                    payload.forEach(r => {
+                        let idx = localData.findIndex(x => x.ID === r.EmployeeID);
+                        if (idx > -1) localData[idx].Status = 'พิมพ์แล้ว';
+                    });
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success' });
+                }
+                else if (action === 'getAgencySettings') {
+                    let settings = JSON.parse(localStorage.getItem('gov_agency_settings')) || agencySettings;
+                    resolve({ status: 'success', data: settings });
+                }
+                else if (action === 'saveAgencySettings') {
+                    localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
+                    resolve({ status: 'success' });
+                }
             });
-            localStorage.setItem('gov_db', JSON.stringify(localData));
-            resolve({ status: 'success' });
         }
-    });
-}
 
-/**
- * ฟังก์ชันจัดการ Google Sheets สำหรับผู้ใช้งาน
- */
-function handleGoogleSheetUsers(action, payload) {
-    return fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: action, payload: payload, data: payload })
-    })
-    .then(res => res.json());
-}
+        function handleGoogleSheetUsers(action, payload) {
+            return fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: action, payload: payload, data: payload })
+            })
+            .then(res => res.json());
+        }
 
         function loadEmployees() {
             fetchAPI('getEmployees').then(res => {
@@ -1176,7 +1174,7 @@ function handleGoogleSheetUsers(action, payload) {
 
         function loadAgencySettings() {
             fetchAPI('getAgencySettings').then(res => {
-                if(res.status === 'success' && res.data) {
+                if(res && res.status === 'success' && res.data) {
                     agencySettings = res.data;
                     applyAgencySettingsUI();
                 }
@@ -1229,24 +1227,21 @@ function handleGoogleSheetUsers(action, payload) {
         }
 
         function saveAgencySettings() {
-    const payload = {
-        head_name: document.getElementById('f_head_name').value,
-        head_position: document.getElementById('f_head_position').value,
-        agency_name: document.getElementById('f_agency_name').value,
-        province: document.getElementById('f_province').value,
-        agency_logo: document.getElementById('f_agency_logo').value
-    };
+            const payload = {
+                head_name: document.getElementById('f_head_name').value,
+                head_position: document.getElementById('f_head_position').value,
+                agency_name: document.getElementById('f_agency_name').value,
+                province: document.getElementById('f_province').value,
+                agency_logo: document.getElementById('f_agency_logo').value
+            };
 
-    agencySettings = payload;
-    applyAgencySettingsUI();
+            agencySettings = payload;
+            applyAgencySettingsUI();
 
-    // 🟢 เพิ่มบรรทัดนี้เพื่อบันทึกลง LocalStorage
-    localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
-
-    fetchAPI('saveAgencySettings', payload).then(res => {
-        showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
-    });
-}
+            fetchAPI('saveAgencySettings', payload).then(res => {
+                showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
+            });
+        }
 
         function resetAgencySettings() {
             if(!confirm('คุณต้องการรีเซ็ตค่าการตั้งค่าหน่วยงานเป็นค่าเริ่มต้นใช่หรือไม่?')) return;
@@ -1390,7 +1385,6 @@ function handleGoogleSheetUsers(action, payload) {
             nav('form');
         }
 
-        // 🟢 2. เพิ่มข้อมูลตัวอย่าง AcademicStanding ใน Mock Data เพื่อลองปรับการตั้งค่า
         function getMockEmp() {
             return {
                 CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายตัวอย่าง ทดสอบระบบ',
@@ -1399,7 +1393,6 @@ function handleGoogleSheetUsers(action, payload) {
             };
         }
 
-        // 🟢 3. เพิ่มปุ่มตั้งค่าใน UI ของหน้าตั้งค่า Template
         function buildTemplateConfigUI() {
             const p = document.getElementById('config-panel');
             p.innerHTML = '';
@@ -1417,10 +1410,7 @@ function handleGoogleSheetUsers(action, payload) {
             createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
             createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
             createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
-            
-            // 🟢 เพิ่มส่วนปรับตั้งค่า "ชื่อสายงานผู้บริหาร"
             createGroup('ชื่อสายงานผู้บริหาร', [{id:'academicStandingX', label:'แกน X (%)'}, {id:'academicStandingY', label:'แกน Y (%)'}, {id:'academicStandingSize', label:'ขนาด Font (vw)'}]);
-
             createGroup('ประเภทพนักงาน', [{id:'positionTypeX', label:'แกน X (%)'}, {id:'positionTypeY', label:'แกน Y (%)'}, {id:'positionTypeSize', label:'ขนาด Font (vw)'}]);
             createGroup('หมู่โลหิต', [{id:'bloodTypeX', label:'แกน X (%)'}, {id:'bloodTypeY', label:'แกน Y (%)'}, {id:'bloodTypeSize', label:'ขนาด Font (vw)'}]);
             createGroup('เลขที่บัตร', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
@@ -1449,7 +1439,6 @@ function handleGoogleSheetUsers(action, payload) {
             if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
         }
 
-        // 🟢 4. แสดงผล "ชื่อสายงานผู้บริหาร" ลงบนการ์ดในพิกัดที่กำหนด
         function renderPreviewBoard(emp, targetContainerId) {
             const container = document.getElementById(targetContainerId);
             if(!container) return;
@@ -1464,19 +1453,16 @@ function handleGoogleSheetUsers(action, payload) {
 
             let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
             
-            // กำหนดค่าเริ่มต้นของ font-weight เป็น '300' (แบบบาง)
             const createTxt = (id, text, x, y, size, fw='300') => {
                 return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
             };
 
             const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
 
-            // ปรับข้อความทุกจุดบนบัตรเป็นแบบบาง (font-weight: 300)
             html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
             html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
             html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
 
-            // 🟢 เพิ่มการแสดงผลข้อความสายงานผู้บริหาร (ถ้ามี หรือแสดงในหน้าพรีวิว Template)
             const academicVal = emp.AcademicStanding ? emp.AcademicStanding : (targetContainerId === 'editor-preview-board' ? '(นักบริหารงานท้องถิ่น)' : '');
             if (academicVal) {
                 html += createTxt('academicStanding', academicVal, tplConfig.academicStandingX, tplConfig.academicStandingY, tplConfig.academicStandingSize, '300');
