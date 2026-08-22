@@ -1459,33 +1459,35 @@
 
             let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
             
-            const createTxt = (id, text, x, y, size, fw='400') => {
+            // กำหนดค่าเริ่มต้นของ font-weight เป็น '300' (แบบบาง)
+            const createTxt = (id, text, x, y, size, fw='300') => {
                 return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
             };
 
             const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
 
-            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '700');
-            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '700');
-            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '400');
+            // ปรับข้อความทุกจุดบนบัตรเป็นแบบบาง (font-weight: 300)
+            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
+            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
+            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
             
             const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
-            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '400');
+            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '300');
             
             const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
-            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '400');
+            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '300');
 
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '400');
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '400');
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '400');
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '300');
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '300');
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '300');
 
             const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
             const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
             const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
 
-            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '700');
-            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '400');
-            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '600');
+            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '300');
+            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '300');
+            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '300');
 
             container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
         }
