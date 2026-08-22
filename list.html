@@ -1229,21 +1229,24 @@ function handleGoogleSheetUsers(action, payload) {
         }
 
         function saveAgencySettings() {
-            const payload = {
-                head_name: document.getElementById('f_head_name').value,
-                head_position: document.getElementById('f_head_position').value,
-                agency_name: document.getElementById('f_agency_name').value,
-                province: document.getElementById('f_province').value,
-                agency_logo: document.getElementById('f_agency_logo').value
-            };
+    const payload = {
+        head_name: document.getElementById('f_head_name').value,
+        head_position: document.getElementById('f_head_position').value,
+        agency_name: document.getElementById('f_agency_name').value,
+        province: document.getElementById('f_province').value,
+        agency_logo: document.getElementById('f_agency_logo').value
+    };
 
-            agencySettings = payload;
-            applyAgencySettingsUI();
+    agencySettings = payload;
+    applyAgencySettingsUI();
 
-            fetchAPI('saveAgencySettings', payload).then(res => {
-                showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
-            });
-        }
+    // 🟢 เพิ่มบรรทัดนี้เพื่อบันทึกลง LocalStorage
+    localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
+
+    fetchAPI('saveAgencySettings', payload).then(res => {
+        showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
+    });
+}
 
         function resetAgencySettings() {
             if(!confirm('คุณต้องการรีเซ็ตค่าการตั้งค่าหน่วยงานเป็นค่าเริ่มต้นใช่หรือไม่?')) return;
