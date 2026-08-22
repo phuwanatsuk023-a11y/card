@@ -110,8 +110,8 @@
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูล...</p>
-                    <p class="text-xs text-gray-300" id="header-user-role">เจ้าหน้าที่</p>
+                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูลจาก Google Sheet...</p>
+                    <p class="text-xs text-gray-300" id="header-user-role">-</p>
                 </div>
                 <img id="header-user-avatar" src="profile_1_1786452882.png" alt="User Profile" class="w-11 h-11 rounded-full object-cover border-2 border-gov-gold bg-white shadow-sm">
                 <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
@@ -453,9 +453,17 @@
             <section id="sec-account-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-user-gear mr-2"></i>ตั้งค่าบัญชีผู้ใช้งาน (Google Sheet Users)</h2>
-                    <button onclick="loadUsersList()" class="bg-gov-blue text-white px-4 py-2 rounded hover:bg-blue-800 text-sm">
-                        <i class="fa-solid fa-rotate mr-1"></i> โหลดข้อมูลใหม่
-                    </button>
+                    <div class="flex gap-4 items-center">
+                        <!-- ปุ่มเปิดปิดระบบ -->
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="system-toggle-btn" class="sr-only peer" onchange="toggleSystemStatus(this)">
+                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            <span class="ms-3 text-sm font-medium text-gray-700" id="system-toggle-label">กำลังตรวจสอบสถานะ...</span>
+                        </label>
+                        <button onclick="loadUsersList()" class="bg-gov-blue text-white px-4 py-2 rounded hover:bg-blue-800 text-sm">
+                            <i class="fa-solid fa-rotate mr-1"></i> โหลดข้อมูลใหม่
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -661,43 +669,32 @@
             initFlatpickr();
         };
 
-        <!-- 🔹 โหลดข้อมูลโปรไฟล์ Header & ตรวจสอบ Role Admin -->
+        <!-- 🔹 โหลดข้อมูลโปรไฟล์ Header & ตรวจสอบ Role Admin (บังคับดึงจาก Sheet เท่านั้น) -->
         function loadCurrentUserInfo() {
             const rawUser = sessionStorage.getItem('currentUser');
-            let user = { name: 'ผู้ใช้งานระบบ', role: 'เจ้าหน้าที่', avatar: 'profile_1_1786452882.png' };
             let userKey = '';
 
             if (rawUser) {
                 try {
                     const parsed = JSON.parse(rawUser);
-                    if (typeof parsed === 'object' && parsed !== null) {
-                        user = { ...user, ...parsed };
-                        userKey = parsed.username || parsed.email || parsed.name || rawUser;
-                    } else {
-                        user.name = rawUser;
-                        userKey = rawUser;
-                    }
+                    userKey = parsed.username || parsed.email || parsed.name || rawUser;
                 } catch(e) {
-                    user.name = rawUser;
                     userKey = rawUser;
                 }
             }
 
-            renderHeaderUser(user);
-
-            // แสดงผลเมนู "ตั้งค่าบัญชี" เฉพาะผู้ที่มี Role เป็น admin
-            if (user.role && String(user.role).toLowerCase() === 'admin') {
-                const adminMenu = document.getElementById('menu-account-settings');
-                if (adminMenu) adminMenu.classList.remove('hidden');
-            }
-
-            if (!USE_LOCAL && GAS_URL) {
-                fetchAPI('getUserInfo', { userKey: userKey }).then(res => {
+            if (GAS_URL) {
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getUserInfo', payload: { userKey: userKey } })
+                })
+                .then(res => res.json())
+                .then(res => {
                     if (res && res.status === 'success' && res.data) {
                         const sheetUser = {
-                            name: res.data.name || (res.data.firstname ? `${res.data.firstname} ${res.data.lastname}` : user.name),
-                            role: res.data.role || user.role,
-                            avatar: res.data.profile_image || res.data.avatar || user.avatar
+                            name: res.data.name || (res.data.firstname ? `${res.data.firstname} ${res.data.lastname}` : 'ผู้ใช้งานระบบ'),
+                            role: res.data.role || 'user',
+                            avatar: res.data.profile_image || 'profile_1_1786452882.png'
                         };
                         renderHeaderUser(sheetUser);
 
@@ -705,10 +702,14 @@
                             const adminMenu = document.getElementById('menu-account-settings');
                             if (adminMenu) adminMenu.classList.remove('hidden');
                         }
+                    } else {
+                        renderHeaderUser({name: 'ไม่พบผู้ใช้ในระบบ', role: 'Unknown', avatar: 'profile_1_1786452882.png'});
                     }
                 }).catch(err => {
-                    console.warn('ไม่สามารถดึงข้อมูลโปรไฟล์จาก Google Sheet ได้ ใช้ข้อมูลจาก Session:', err);
+                    renderHeaderUser({name: 'ข้อผิดพลาดในการดึงข้อมูล Sheet', role: '-', avatar: 'profile_1_1786452882.png'});
                 });
+            } else {
+                renderHeaderUser({name: 'กรุณาตั้งค่า GAS URL เพื่อเชื่อมต่อ', role: '-', avatar: 'profile_1_1786452882.png'});
             }
         }
 
@@ -838,12 +839,21 @@
             showToast('ลบรายการเรียบร้อย');
         }
 
-        <!-- 🔹 จัดการบัญชีผู้ใช้ (Google Sheet Users) -->
+        <!-- 🔹 จัดการบัญชีผู้ใช้ (Google Sheet Users Only) และ สถานะระบบ -->
         function loadUsersList() {
             const tbody = document.getElementById('users-table-body');
             tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังดึงข้อมูลจาก Google Sheet...</td></tr>';
 
-            fetchAPI('getUsers').then(res => {
+            if (!GAS_URL) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">กรุณาตั้งค่า GAS URL เพื่อเชื่อมต่อระบบก่อนใช้งาน</td></tr>';
+                return;
+            }
+
+            // บังคับดึงข้อมูลจาก Sheet เท่านั้น
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getUsers' })
+            }).then(res => res.json()).then(res => {
                 if (res && res.status === 'success' && res.data) {
                     renderUsersTable(res.data);
                 } else {
@@ -852,6 +862,34 @@
             }).catch(err => {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">เกิดข้อผิดพลาดในการเชื่อมต่อ Google Sheet</td></tr>';
             });
+
+            // ตรวจสอบสถานะระบบ
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getSystemStatus' })
+            }).then(res => res.json()).then(res => {
+                if (res && res.status === 'success') {
+                    const toggle = document.getElementById('system-toggle-btn');
+                    const label = document.getElementById('system-toggle-label');
+                    toggle.checked = res.data.isOpen;
+                    label.innerText = res.data.isOpen ? 'ระบบเปิดใช้งาน' : 'ระบบปิดใช้งาน';
+                }
+            });
+        }
+
+        function toggleSystemStatus(cb) {
+            const isOpen = cb.checked;
+            const label = document.getElementById('system-toggle-label');
+            label.innerText = isOpen ? 'ระบบเปิดใช้งาน' : 'ระบบปิดใช้งาน';
+            
+            if (GAS_URL) {
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'toggleSystemStatus', payload: { isOpen: isOpen } })
+                }).then(res => res.json()).then(res => {
+                    if(res.status === 'success') showToast('อัปเดตสถานะระบบเรียบร้อยแล้ว');
+                });
+            }
         }
 
         function renderUsersTable(users) {
@@ -859,7 +897,7 @@
             tbody.innerHTML = '';
 
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500">ไม่พบรายการผู้ใช้งาน</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500">ไม่พบรายการผู้ใช้งานใน Sheet</td></tr>';
                 return;
             }
 
@@ -913,17 +951,26 @@
                 organization: document.getElementById('edit_u_organization').value
             };
 
-            fetchAPI('updateUser', payload).then(res => {
-                showToast('บันทึกการแก้ไขผู้ใช้สำเร็จ');
+            if(!GAS_URL) return showToast('ไม่พบการเชื่อมต่อ', 'error');
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'updateUser', payload: payload })
+            }).then(res => res.json()).then(res => {
+                showToast('บันทึกการแก้ไขผู้ใช้ใน Sheet สำเร็จ');
                 closeUserEditModal();
                 loadUsersList();
             }).catch(err => showToast('ไม่สามารถอัปเดตข้อมูลได้', 'error'));
         }
 
         function deleteUser(id, username) {
-            if (!confirm(`ยืนยันการลบบัญชีผู้ใช้ ${username} ใช่หรือไม่?`)) return;
+            if (!confirm(`ยืนยันการลบบัญชีผู้ใช้ ${username} บน Google Sheet ใช่หรือไม่?`)) return;
+            if(!GAS_URL) return showToast('ไม่พบการเชื่อมต่อ', 'error');
 
-            fetchAPI('deleteUser', { id: id, username: username }).then(res => {
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'deleteUser', payload: { id: id, username: username } })
+            }).then(res => res.json()).then(res => {
                 showToast('ลบบัญชีผู้ใช้เรียบร้อย');
                 loadUsersList();
             }).catch(err => showToast('ไม่สามารถลบข้อมูลได้', 'error'));
@@ -1087,9 +1134,6 @@
                 if(USE_LOCAL) {
                     setTimeout(() => {
                         let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
-                        let localUsers = JSON.parse(localStorage.getItem('gov_users')) || [
-                            { id: 1, firstname: 'แอดมิน', lastname: 'ผู้ดูแลระบบ', username: 'admin', role: 'admin', position: 'ผู้ดูแลระบบ', organization: 'สำนักเทคโนโลยี' }
-                        ];
 
                         if (action === 'getEmployees') resolve({status:'success', data: localData});
                         else if (action === 'saveEmployee') {
@@ -1109,20 +1153,6 @@
                         else if (action === 'deleteEmployee') {
                             localData = localData.filter(x => String(x.ID) !== String(payload.ID));
                             localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'getUsers') {
-                            resolve({status:'success', data: localUsers});
-                        }
-                        else if (action === 'updateUser') {
-                            let idx = localUsers.findIndex(u => String(u.id) === String(payload.id));
-                            if (idx > -1) localUsers[idx] = { ...localUsers[idx], ...payload };
-                            localStorage.setItem('gov_users', JSON.stringify(localUsers));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'deleteUser') {
-                            localUsers = localUsers.filter(u => String(u.id) !== String(payload.id));
-                            localStorage.setItem('gov_users', JSON.stringify(localUsers));
                             resolve({status:'success'});
                         }
                         else if (action === 'recordPrint') {
@@ -1445,6 +1475,7 @@
             if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
         }
 
+        <!-- 🔹 บังคับน้ำหนัก Font บน Template ให้เป็น "ตัวบาง" (300) ทั้งหมด -->
         function renderPreviewBoard(emp, targetContainerId) {
             const container = document.getElementById(targetContainerId);
             if(!container) return;
@@ -1459,33 +1490,34 @@
 
             let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
             
-            const createTxt = (id, text, x, y, size, fw='400') => {
+            const createTxt = (id, text, x, y, size, fw='300') => {
                 return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
             };
 
             const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
 
-            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '700');
-            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '700');
-            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '400');
+            // ใช้ค่า '300' (ตัวบาง) ให้กับทุกจุดบนบัตร
+            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
+            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
+            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
             
             const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
-            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '400');
+            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '300');
             
             const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
-            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '400');
+            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '300');
 
-            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '400');
-            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '400');
-            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '400');
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '300');
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '300');
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '300');
 
             const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
             const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
             const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
 
-            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '700');
-            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '400');
-            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '600');
+            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '300');
+            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '300');
+            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '300');
 
             container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
         }
