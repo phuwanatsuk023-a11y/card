@@ -16,13 +16,10 @@
         })();
     </script>
 
-    <!-- Fonts: Noto Sans Thai & TH Sarabun PSK -->
+    <!-- Fonts: Noto Sans Thai & TH Sarabun PSK / Sarabun -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&display=swap');
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,15 +32,16 @@
                         sarabun: ['"Sarabun"', 'sans-serif']
                     },
                     colors: {
-                        gov: { navy: '#0f172a', blue: '#1d4ed8', gold: '#eab308', light: '#f8fafc' }
+                        gov: { navy: '#1d4ed8', blue: '#2563eb', gold: '#eab308', light: '#f8fafc' }
                     }
                 }
             }
         }
     </script>
     
-    <!-- Icons (FontAwesome) -->
+    <!-- Icons (FontAwesome & Lucide Icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Flatpickr (Thai Calendar Support) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -98,25 +96,61 @@
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
 
-    <!-- Header Bar -->
-    <header id="topbar" class="bg-gov-navy text-white shadow-md z-20 shrink-0">
-        <div class="px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <img id="header-logo" src="" alt="Logo" class="w-10 h-10 object-contain rounded bg-white p-1 shadow-sm">
-                <div>
-                    <h1 class="text-xl font-bold tracking-wide">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
-                    <p class="text-xs text-gray-300" id="header-org-name"></p>
+    <!-- Header Bar (ปรับแต่งตาม Header.php) -->
+    <header id="topbar" class="w-full px-6 py-4 shadow-md flex items-center justify-between bg-blue-600 text-white z-40 sticky top-0 shrink-0">
+        <!-- โลโก้และชื่อหน่วยงาน -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20 overflow-hidden">
+                <img id="header-logo" src="" alt="Logo" class="w-full h-full object-contain p-1 hidden">
+                <i id="header-logo-icon" data-lucide="building-2" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">การจัดการข้อมูลบุคลากร</h1>
+                <p class="text-xs text-blue-100 font-light" id="header-org-name">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</p>
+            </div>
+        </div>
+        
+        <!-- ส่วนแสดงข้อมูลผู้ใช้งานและนาฬิกา -->
+        <div class="flex items-center gap-4 sm:gap-5">
+            <div class="text-right hidden sm:block">
+                <div class="text-xs text-blue-100"><span class="font-bold text-white" id="header-user-name">กำลังโหลดข้อมูล...</span></div>
+                <div class="text-[10px] bg-blue-700 px-2.5 py-0.5 rounded-full mt-0.5 inline-block font-semibold uppercase tracking-wider border border-blue-400/30">
+                    Role: <span id="header-user-role">guest</span>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-sm text-right hidden md:block">
-                    <p class="font-semibold" id="header-user-name">กำลังโหลดข้อมูล...</p>
-                    <p class="text-xs text-gray-300" id="header-user-role">เจ้าหน้าที่</p>
-                </div>
-                
-                <button class="text-red-400 hover:text-red-300 ml-2" title="ออกจากระบบ" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html';">
-                    <i class="fa-solid fa-right-from-bracket text-xl"></i>
+            
+            <div class="text-right font-mono bg-blue-700/50 px-3 py-1 rounded-xl border border-blue-500/40 hidden md:block">
+                <div id="header-date" class="text-[11px] text-blue-100 font-sans"></div>
+                <div id="header-time" class="text-sm font-bold tracking-wider text-amber-300"></div>
+            </div>
+
+            <!-- รูปโปรไฟล์ (วงกลม + Hover Effect) -->
+            <div class="relative flex items-center justify-center z-50">
+                <img id="header-user-avatar" 
+                     src="profile_1_1786452882.png" 
+                     alt="User Profile" 
+                     onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"
+                     class="w-10 h-10 rounded-full object-cover border-2 border-white/80 shadow-md transition-all duration-500 ease-out transform hover:scale-[3.5] hover:-translate-x-10 hover:translate-y-12 hover:shadow-2xl hover:z-50 cursor-pointer">
+            </div>
+
+            <!-- เมนูเพิ่มเติม (Kebab Menu) -->
+            <div class="relative group">
+                <button type="button" id="kebab-menu-btn" aria-label="เมนูเพิ่มเติม" class="p-2 hover:bg-blue-700/80 rounded-lg transition-colors duration-200 focus:outline-none flex items-center justify-center">
+                    <i data-lucide="more-vertical" class="w-5 h-5 text-white"></i>
                 </button>
+                <div id="kebab-dropdown" class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-50">
+                    <div class="bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 text-gray-800">
+                        <a href="#" onclick="nav('account-settings'); return false;" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors">
+                            <i data-lucide="user-cog" class="w-4 h-4 text-blue-600"></i>
+                            <span>ตั้งค่าบัญชี</span>
+                        </a>
+                        <hr class="my-1 border-gray-100">
+                        <a href="#" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html'; return false;" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors">
+                            <i data-lucide="log-out" class="w-4 h-4 text-red-600"></i>
+                            <span>ออกจากระบบ</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -126,36 +160,36 @@
         <!-- Sidebar Navigation -->
         <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
             <nav class="flex-1 py-4 flex flex-col gap-1">
-                <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-chart-pie w-5"></i> <span>Dashboard</span>
                 </a>
-                <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลเจ้าหน้าที่</span>
                 </a>
-                <a href="#" onclick="openAddForm()" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="openAddForm()" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-user-plus w-5"></i> <span>เพิ่มข้อมูลใหม่</span>
                 </a>
-                <a href="#" onclick="nav('agency-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="nav('agency-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-building-circle-check w-5"></i> <span>เพิ่มหน่วยงาน</span>
                 </a>
-                <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>ประวัติการพิมพ์</span>
                 </a>
                 <div class="my-2 border-t border-gray-100"></div>
                 <p class="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ตั้งค่าระบบ</p>
-                <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
                     <i class="fa-solid fa-id-card-clip w-5"></i> <span>ตั้งค่า Template บัตร</span>
                 </a>
                 
                 <!-- เมนูตั้งค่าบัญชี (แสดงเฉพาะ Role: admin) -->
-                <a href="#" id="menu-account-settings" onclick="nav('account-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gov-blue border-l-4 border-transparent flex items-center gap-3 transition-colors hidden">
+                <a href="#" id="menu-account-settings" onclick="nav('account-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors hidden">
                     <i class="fa-solid fa-user-gear w-5"></i> <span>ตั้งค่าบัญชี</span>
                 </a>
             </nav>
             <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
-                <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-gov-gold shadow-sm">
+                <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-blue-500 shadow-sm">
                 <div>
-                    <p class=" text-gray-600 text-sm">นายภูวนาท สุขประเสริฐ</p>
+                    <p class="text-gray-600 text-sm font-semibold">นายภูวนาท สุขประเสริฐ</p>
                     <p class="text-xs text-gray-500">ผู้พัฒนาระบบ</p>
                 </div>
                 <div class="mt-1 font-bold text-gray-400 text-[11px] tracking-wider uppercase">GovCard Pro v1.0</div>
@@ -168,9 +202,9 @@
             <!-- Dashboard Section -->
             <section id="sec-dashboard" class="view-section">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy">ภาพรวมระบบ (Dashboard)</h2>
+                    <h2 class="text-2xl font-bold text-blue-900">ภาพรวมระบบ (Dashboard)</h2>
                     <div class="flex gap-2">
-                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
+                        <button onclick="openAddForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
                             <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
                         </button>
                     </div>
@@ -219,9 +253,9 @@
             <!-- Employees Table Section -->
             <section id="sec-employees" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy">ข้อมูลเจ้าหน้าที่</h2>
+                    <h2 class="text-2xl font-bold text-blue-900">ข้อมูลเจ้าหน้าที่</h2>
                     <div class="flex gap-2">
-                        <button onclick="openAddForm()" class="bg-gov-blue hover:bg-blue-800 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
+                        <button onclick="openAddForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
                         <button onclick="prepareBatchPrint()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-print"></i> พิมพ์รายการที่เลือก</button>
                     </div>
                 </div>
@@ -230,7 +264,7 @@
                     <div class="p-4 border-b border-gray-200 flex gap-4 bg-gray-50 rounded-t-lg">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
-                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวประชาชน หรือเลขที่บัตร..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-gov-blue focus:ring-1 focus:ring-gov-blue">
+                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวประชาชน หรือเลขที่บัตร..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600">
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -256,7 +290,7 @@
             <!-- Section: ฟอร์มเพิ่ม/แก้ไขข้อมูล -->
             <section id="sec-form" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy" id="form-title">เพิ่มข้อมูลบุคลากรใหม่</h2>
+                    <h2 class="text-2xl font-bold text-blue-900" id="form-title">เพิ่มข้อมูลบุคลากรใหม่</h2>
                     <button onclick="nav('employees')" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-arrow-left"></i> กลับหน้ารายการ</button>
                 </div>
 
@@ -266,16 +300,16 @@
                         
                         <!-- ข้อมูลส่วนบุคคล -->
                         <div class="border-b pb-6">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-gov-blue pl-2">ข้อมูลส่วนบุคคลและสังกัด</h3>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-blue-600 pl-2">ข้อมูลส่วนบุคคลและสังกัด</h3>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                 <div>
                                     <label for="f_citizenId" class="block text-sm font-medium text-gray-700 mb-1">เลขประจำตัวประชาชน (13 หลัก) <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_citizenId" required maxlength="17" placeholder="x xxxx xxxxx xx x" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <input type="text" id="f_citizenId" required maxlength="17" placeholder="x xxxx xxxxx xx x" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                 </div>
                                 <div>
                                     <label for="f_employeeName" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_employeeName" required placeholder="นาย/นาง/นางสาว..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <input type="text" id="f_employeeName" required placeholder="นาย/นาง/นางสาว..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                 </div>
                             </div>
 
@@ -284,24 +318,24 @@
                                 <div>
                                     <label for="f_schoolAffiliation" class="block text-sm font-medium text-gray-700 mb-1">ส่วนราชการ <span class="text-red-500">*</span></label>
                                     <div class="flex gap-2">
-                                        <select id="f_schoolAffiliation" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                        <select id="f_schoolAffiliation" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                             <option value="">--- เลือกส่วนราชการ ---</option>
                                         </select>
-                                        <button type="button" onclick="openMasterModal('affiliation')" class="bg-gov-blue text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors" title="จัดการส่วนราชการ">
+                                        <button type="button" onclick="openMasterModal('affiliation')" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors" title="จัดการส่วนราชการ">
                                             <i class="fa-solid fa-plus"></i>
                                         </button>
                                     </div>
                                 </div>
                                 <div>
                                     <label for="f_positionName" class="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_positionName" required placeholder="เช่น นักทรัพยากรบุคคลปฏิบัติการ" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <input type="text" id="f_positionName" required placeholder="เช่น นักทรัพยากรบุคคลปฏิบัติการ" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                 </div>
                             </div>
 
                             <div id="f_academic_standing_wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 hidden">
                                 <div>
                                     <label for="f_academicStanding" class="block text-sm font-medium text-gray-700 mb-1">ชื่อสายงานผู้บริหาร</label>
-                                    <input type="text" id="f_academicStanding" placeholder="(นักบริหารงาน......)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <input type="text" id="f_academicStanding" placeholder="(นักบริหารงาน......)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                 </div>
                             </div>
 
@@ -310,17 +344,17 @@
                                 <div>
                                     <label for="f_positionType" class="block text-sm font-medium text-gray-700 mb-1">ประเภทพนักงาน <span class="text-red-500">*</span></label>
                                     <div class="flex gap-2">
-                                        <select id="f_positionType" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                        <select id="f_positionType" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                             <option value="">--- เลือกประเภทพนักงาน ---</option>
                                         </select>
-                                        <button type="button" onclick="openMasterModal('positionType')" class="bg-gov-blue text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition-colors" title="จัดการประเภทพนักงาน">
+                                        <button type="button" onclick="openMasterModal('positionType')" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors" title="จัดการประเภทพนักงาน">
                                             <i class="fa-solid fa-plus"></i>
                                         </button>
                                     </div>
                                 </div>
                                 <div>
                                     <label for="f_gender" class="block text-sm font-medium text-gray-700 mb-1">เพศ <span class="text-red-500">*</span></label>
-                                    <select id="f_gender" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <select id="f_gender" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                         <option value="">เลือกเพศ</option>
                                         <option value="ชาย">ชาย</option>
                                         <option value="หญิง">หญิง</option>
@@ -329,7 +363,7 @@
                                 </div>
                                 <div>
                                     <label for="f_bloodType" class="block text-sm font-medium text-gray-700 mb-1">หมู่โลหิต</label>
-                                    <select id="f_bloodType" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-gov-blue focus:outline-none text-sm">
+                                    <select id="f_bloodType" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
                                         <option value="">เลือกหมู่โลหิต (ไม่บังคับ)</option>
                                         <option value="เอ">เอ</option>
                                         <option value="บี">บี</option>
@@ -346,11 +380,11 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">เลขที่บัตร <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_cardNum" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                    <input type="text" id="f_cardNum" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร <span class="text-red-500">*</span></label>
-                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none bg-white cursor-pointer">
+                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none bg-white cursor-pointer">
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-xs text-gray-400"></span></label>
@@ -361,7 +395,7 @@
 
                         <div class="pt-6 border-t flex justify-end gap-3">
                             <button type="button" onclick="nav('employees')" class="px-6 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">ยกเลิก</button>
-                            <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md font-medium"><i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล</button>
+                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md font-medium"><i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล</button>
                         </div>
                     </form>
                 </div>
@@ -370,7 +404,7 @@
             <!-- Section: ตั้งค่าหน่วยงาน -->
             <section id="sec-agency-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-building-user mr-2"></i>ตั้งค่าหน่วยงาน</h2>
+                    <h2 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-building-user mr-2"></i>ตั้งค่าหน่วยงาน</h2>
                 </div>
 
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-4xl">
@@ -399,19 +433,19 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อนายก อปท. (ผู้บริหารสูงสุด) *</label>
-                                <input type="text" id="f_head_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                <input type="text" id="f_head_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1">2. ตำแหน่ง *</label>
-                                <input type="text" id="f_head_position" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                <input type="text" id="f_head_position" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1">3. ชื่อ อปท. (เช่น เทศบาลตำบล/อบต./เมืองพัทยา) *</label>
-                                <input type="text" id="f_agency_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                <input type="text" id="f_agency_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1">4. จังหวัด *</label>
-                                <input type="text" id="f_province" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
+                                <input type="text" id="f_province" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
                             </div>
                         </div>
 
@@ -419,7 +453,7 @@
                             <button type="button" onclick="resetAgencySettings()" class="px-4 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-100 text-sm font-medium">
                                 <i class="fa-solid fa-rotate-left mr-1"></i> รีเซ็ตค่าเริ่มต้น
                             </button>
-                            <button type="submit" class="px-6 py-2 bg-gov-blue text-white rounded hover:bg-blue-800 shadow-md text-sm font-medium">
+                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md text-sm font-medium">
                                 <i class="fa-solid fa-save mr-1"></i> บันทึกการตั้งค่า
                             </button>
                         </div>
@@ -430,7 +464,7 @@
             <!-- Section: ตั้งค่า Template -->
             <section id="sec-template-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
+                    <h2 class="text-2xl font-bold text-blue-900">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
                     <button onclick="saveTemplateSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-save"></i> บันทึกตำแหน่ง</button>
                 </div>
                 
@@ -452,8 +486,8 @@
             <!-- Section: ตั้งค่าบัญชีผู้ใช้ (เฉพาะ Admin) -->
             <section id="sec-account-settings" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-user-gear mr-2"></i>ตั้งค่าบัญชีผู้ใช้งาน (Google Sheet Users)</h2>
-                    <button onclick="loadUsersList()" class="bg-gov-blue text-white px-4 py-2 rounded hover:bg-blue-800 text-sm">
+                    <h2 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-user-gear mr-2"></i>ตั้งค่าบัญชีผู้ใช้งาน (Google Sheet Users)</h2>
+                    <button onclick="loadUsersList()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
                         <i class="fa-solid fa-rotate mr-1"></i> โหลดข้อมูลใหม่
                     </button>
                 </div>
@@ -485,10 +519,10 @@
             <!-- Preview Section -->
             <section id="sec-print-preview" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6 no-print">
-                    <h2 class="text-2xl font-bold text-gov-navy"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
+                    <h2 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
                     <div class="flex gap-2">
                         <button onclick="nav('employees')" class="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-arrow-left"></i> กลับ</button>
-                        <button onclick="executePrint()" class="bg-gov-blue hover:bg-blue-800 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์ (Print / PDF)</button>
+                        <button onclick="executePrint()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์ (Print / PDF)</button>
                     </div>
                 </div>
 
@@ -499,14 +533,14 @@
             <!-- System Settings -->
             <section id="sec-system-settings" class="view-section hidden">
                 <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
-                    <h2 class="text-xl font-bold text-gov-navy mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
+                    <h2 class="text-xl font-bold text-blue-900 mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
                     <p class="text-sm text-gray-600 mb-6">หากปล่อยว่างไว้ ระบบจะทำงานในโหมด "Local Storage" หากต้องการให้เชื่อมกับ Google Sheets ให้วาง Web App URL ลงที่นี่</p>
                     
                     <div class="mb-4">
                         <label class="block text-sm font-semibold mb-1">Web App URL (GAS End Point)</label>
                         <input type="text" id="set_gas_url" placeholder="https://script.google.com/macros/s/AKfycbxumO_fFwaz3vNEt_VVxX9nEgy_OTx_7eQho3BQyuUrvzi94FFpEaE2IndeoEydfjUUXQ/exec" class="w-full border rounded px-3 py-2 font-mono text-sm">
                     </div>
-                    <button onclick="saveSystemSettings()" class="bg-gov-blue text-white px-4 py-2 rounded"><i class="fa-solid fa-save"></i> บันทึกการเชื่อมต่อ</button>
+                    <button onclick="saveSystemSettings()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><i class="fa-solid fa-save"></i> บันทึกการเชื่อมต่อ</button>
                 </div>
             </section>
 
@@ -516,23 +550,20 @@
     <!-- Modal จัดการตัวเลือก (ส่วนราชการ / ประเภทพนักงาน) -->
     <div id="modal-master-data" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div class="bg-gov-navy text-white px-6 py-4 flex justify-between items-center">
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
                 <h3 class="font-bold text-lg" id="modal-master-title">จัดการข้อมูล</h3>
-                <button onclick="closeMasterModal()" class="text-gray-300 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="closeMasterModal()" class="text-blue-100 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <!-- ฟอร์มเพิ่ม/แก้ไข -->
                 <div class="flex gap-2">
                     <input type="hidden" id="master_edit_index" value="-1">
-                    <input type="text" id="master_input_val" placeholder="กรอกชื่อรายการใหม่..." class="flex-1 border rounded-lg p-2 text-sm focus:ring-1 focus:ring-gov-blue focus:outline-none">
-                    <button onclick="saveMasterItem()" class="bg-gov-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800 font-medium">
+                    <input type="text" id="master_input_val" placeholder="กรอกชื่อรายการใหม่..." class="flex-1 border rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                    <button onclick="saveMasterItem()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 font-medium">
                         <i class="fa-solid fa-plus mr-1"></i> บันทึก
                     </button>
                 </div>
-                <!-- ตารางรายการ -->
                 <div class="max-h-60 overflow-y-auto border rounded-lg divide-y">
                     <ul id="master_items_list" class="divide-y text-sm">
-                        <!-- รายการย่อยจะถูกแทรกที่นี่ -->
                     </ul>
                 </div>
             </div>
@@ -545,9 +576,9 @@
     <!-- Modal แก้ไขข้อมูลผู้ใช้งาน (Admin Edit User) -->
     <div id="modal-edit-user" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-            <div class="bg-gov-navy text-white px-6 py-4 flex justify-between items-center">
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
                 <h3 class="font-bold text-lg"><i class="fa-solid fa-user-pen mr-2"></i>แก้ไขข้อมูลผู้ใช้งาน</h3>
-                <button onclick="closeUserEditModal()" class="text-gray-300 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="closeUserEditModal()" class="text-blue-100 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form id="edit-user-form" onsubmit="saveUserEdit(event)" class="p-6 space-y-4">
                 <input type="hidden" id="edit_u_id">
@@ -586,7 +617,7 @@
                 </div>
                 <div class="pt-4 border-t flex justify-end gap-2">
                     <button type="button" onclick="closeUserEditModal()" class="px-4 py-2 border rounded text-sm">ยกเลิก</button>
-                    <button type="submit" class="px-4 py-2 bg-gov-blue text-white rounded text-sm hover:bg-blue-800"><i class="fa-solid fa-save mr-1"></i> บันทึกการแก้ไข</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"><i class="fa-solid fa-save mr-1"></i> บันทึกการแก้ไข</button>
                 </div>
             </form>
         </div>
@@ -599,11 +630,9 @@
     </div>
 
     <script>
-        
         let GAS_URL = 'https://script.google.com/macros/s/AKfycbxumO_fFwaz3vNEt_VVxX9nEgy_OTx_7eQho3BQyuUrvzi94FFpEaE2IndeoEydfjUUXQ/exec';
         let USE_LOCAL = GAS_URL === '';
         
-        // ข้อมูลหลักตัวเลือก Master Data (ส่วนราชการ & ประเภทพนักงาน)
         let masterAffiliations = JSON.parse(localStorage.getItem('gov_master_affiliations')) || [
             'สำนักงานเทศบาล', 'กองคลัง', 'กองช่าง', 'กองการศึกษา',  
         ];
@@ -649,8 +678,6 @@
         let currentPrintList = [];
         let issuePicker = null, expirePicker = null;
 
-        const defaultLogoSVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%231d4ed8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>';
-
         window.onload = () => {
             document.getElementById('set_gas_url').value = GAS_URL;
             loadCurrentUserInfo();
@@ -661,7 +688,49 @@
             buildTemplateConfigUI();
             initFormListeners();
             initFlatpickr();
+            initHeaderClock();
+            initHeaderEvents();
         };
+
+        function initHeaderClock() {
+            const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+            const dateEl = document.getElementById('header-date');
+            const timeEl = document.getElementById('header-time');
+
+            function updateHeaderDateTime() {
+                if (!dateEl || !timeEl) return;
+                const now = new Date();
+                const thaiYear = now.getFullYear() + 543;
+                
+                dateEl.textContent = `${now.getDate()} ${thaiMonths[now.getMonth()]} ${thaiYear}`;
+                timeEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            }
+
+            updateHeaderDateTime();
+            setInterval(updateHeaderDateTime, 1000);
+        }
+
+        function initHeaderEvents() {
+            const kebabBtn = document.getElementById('kebab-menu-btn');
+            const kebabDropdown = document.getElementById('kebab-dropdown');
+            
+            if (kebabBtn && kebabDropdown) {
+                kebabBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    kebabDropdown.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!kebabDropdown.contains(e.target) && !kebabBtn.contains(e.target)) {
+                        kebabDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        }
 
         function loadCurrentUserInfo() {
             const rawUser = sessionStorage.getItem('currentUser');
@@ -1041,7 +1110,7 @@
         function nav(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.menu-btn').forEach(el => {
-                el.classList.remove('bg-gray-50', 'text-gov-blue', 'border-gov-blue');
+                el.classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-600');
                 el.classList.add('text-gray-600', 'border-transparent');
             });
 
@@ -1079,11 +1148,7 @@
             }, 3000);
         }
 
-        /**
-         * 🟢 ปรับปรุง fetchAPI รองรับทั้ง LocalStorage และ GAS
-         */
         function fetchAPI(action, payload = null) {
-            // รวม action ที่ใช้ LocalStorage
             const localActions = ['getEmployees', 'saveEmployee', 'deleteEmployee', 'recordPrint', 'getAgencySettings', 'saveAgencySettings'];
             
             if (localActions.includes(action)) {
@@ -1093,9 +1158,6 @@
             return handleGoogleSheetUsers(action, payload);
         }
 
-        /**
-         * 🟢 ฟังก์ชันจัดการ LocalStorage ทั้งหมด
-         */
         function handleLocalStorageData(action, payload) {
             return new Promise((resolve) => {
                 let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
@@ -1188,16 +1250,25 @@
             document.getElementById('f_province').value = agencySettings.province || '';
             document.getElementById('f_agency_logo').value = agencySettings.agency_logo || '';
 
-            const headerLogo = document.getElementById('header-logo');
+            const headerLogoImg = document.getElementById('header-logo');
+            const headerLogoIcon = document.getElementById('header-logo-icon');
+
             if(agencySettings.agency_logo) {
                 document.getElementById('agency_logo_preview').src = agencySettings.agency_logo;
                 document.getElementById('agency_logo_preview').classList.remove('hidden');
                 document.getElementById('agency_logo_placeholder').classList.add('hidden');
-                headerLogo.src = agencySettings.agency_logo;
+                
+                if (headerLogoImg) {
+                    headerLogoImg.src = agencySettings.agency_logo;
+                    headerLogoImg.classList.remove('hidden');
+                }
+                if (headerLogoIcon) headerLogoIcon.classList.add('hidden');
             } else {
                 document.getElementById('agency_logo_preview').classList.add('hidden');
                 document.getElementById('agency_logo_placeholder').classList.remove('hidden');
-                headerLogo.src = defaultLogoSVG;
+                
+                if (headerLogoImg) headerLogoImg.classList.add('hidden');
+                if (headerLogoIcon) headerLogoIcon.classList.remove('hidden');
             }
 
             if(agencySettings.agency_name) {
@@ -1300,7 +1371,7 @@
                     <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${statusColor}">${emp.Status}</span></td>
                     <td class="p-3 text-center">
                         <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
-                        <button onclick="previewCard(['${emp.ID}'])" class="text-gov-navy hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
+                        <button onclick="previewCard(['${emp.ID}'])" class="text-blue-700 hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
                         <button onclick="deleteEmployee('${emp.ID}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบข้อมูล"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
@@ -1398,7 +1469,7 @@
             p.innerHTML = '';
             
             const createGroup = (title, keys) => {
-                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200"><h4 class="font-semibold text-gov-blue mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
+                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200"><h4 class="font-semibold text-blue-600 mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
                 keys.forEach(k => {
                     html += `<div><label class="block text-xs text-gray-500">${k.label}</label>
                              <input type="number" step="0.1" id="cfg_${k.id}" value="${tplConfig[k.id] ?? 0}" oninput="updateConfigLive()" class="w-full border rounded px-2 py-1 text-sm"></div>`;
