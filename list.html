@@ -1085,78 +1085,70 @@
             }, 3000);
         }
 
-        function fetchAPI(action, payload=null) {
-            return new Promise((resolve, reject) => {
-                if(USE_LOCAL) {
-                    setTimeout(() => {
-                        let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
-                        let localUsers = JSON.parse(localStorage.getItem('gov_users')) || [
-                            { id: 1, firstname: 'แอดมิน', lastname: 'ผู้ดูแลระบบ', username: 'admin', role: 'admin', position: 'ผู้ดูแลระบบ', organization: 'สำนักเทคโนโลยี' }
-                        ];
+        /**
+ * ปรับปรุง fetchAPI ให้แยกการทำงานตามประเภทของข้อมูล
+ */
+function fetchAPI(action, payload = null) {
+    // 1. แยกกลุ่ม Actions สำหรับพนักงาน (LocalStorage)
+    const employeeActions = ['getEmployees', 'saveEmployee', 'deleteEmployee', 'recordPrint'];
+    
+    if (employeeActions.includes(action)) {
+        return handleLocalStorageEmployees(action, payload);
+    } 
 
-                        if (action === 'getEmployees') resolve({status:'success', data: localData});
-                        else if (action === 'saveEmployee') {
-                            if(payload.ID) {
-                                let idx = localData.findIndex(x=>x.ID === payload.ID);
-                                if(idx>-1) {
-                                    localData[idx] = { ...localData[idx], ...payload };
-                                }
-                            } else {
-                                payload.ID = Date.now().toString();
-                                payload.Status = 'รอจัดทำ';
-                                localData.push(payload);
-                            }
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success', data: {id: payload.ID}});
-                        }
-                        else if (action === 'deleteEmployee') {
-                            localData = localData.filter(x => String(x.ID) !== String(payload.ID));
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'getUsers') {
-                            resolve({status:'success', data: localUsers});
-                        }
-                        else if (action === 'updateUser') {
-                            let idx = localUsers.findIndex(u => String(u.id) === String(payload.id));
-                            if (idx > -1) localUsers[idx] = { ...localUsers[idx], ...payload };
-                            localStorage.setItem('gov_users', JSON.stringify(localUsers));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'deleteUser') {
-                            localUsers = localUsers.filter(u => String(u.id) !== String(payload.id));
-                            localStorage.setItem('gov_users', JSON.stringify(localUsers));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'recordPrint') {
-                            payload.forEach(r => {
-                                let idx = localData.findIndex(x=>x.ID === r.EmployeeID);
-                                if(idx>-1) localData[idx].Status = 'พิมพ์แล้ว';
-                            });
-                            localStorage.setItem('gov_db', JSON.stringify(localData));
-                            resolve({status:'success'});
-                        }
-                        else if (action === 'getAgencySettings') {
-                            let agencyData = JSON.parse(localStorage.getItem('gov_agency_settings')) || {};
-                            resolve({status:'success', data: agencyData});
-                        }
-                        else if (action === 'saveAgencySettings') {
-                            localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
-                            resolve({status:'success'});
-                        }
-                    }, 200);
-                } else {
-                    fetch(GAS_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: action, payload: payload, data: payload })
-                    })
-                    .then(res => res.json())
-                    .then(resolve)
-                    .catch(reject);
-                }
-            });
+    // 2. กลุ่ม Actions สำหรับผู้ใช้งาน (Google Sheet ผ่าน GAS)
+    return handleGoogleSheetUsers(action, payload);
+}
+
+/**
+ * ฟังก์ชันจัดการ LocalStorage สำหรับพนักงาน
+ */
+function handleLocalStorageEmployees(action, payload) {
+    return new Promise((resolve) => {
+        let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
+
+        if (action === 'getEmployees') {
+            resolve({ status: 'success', data: localData });
+        } 
+        else if (action === 'saveEmployee') {
+            if (payload.ID) {
+                let idx = localData.findIndex(x => x.ID === payload.ID);
+                if (idx > -1) localData[idx] = { ...localData[idx], ...payload };
+            } else {
+                payload.ID = Date.now().toString();
+                payload.Status = 'รอจัดทำ';
+                localData.push(payload);
+            }
+            localStorage.setItem('gov_db', JSON.stringify(localData));
+            resolve({ status: 'success', data: { id: payload.ID } });
+        } 
+        else if (action === 'deleteEmployee') {
+            localData = localData.filter(x => String(x.ID) !== String(payload.ID));
+            localStorage.setItem('gov_db', JSON.stringify(localData));
+            resolve({ status: 'success' });
         }
+        else if (action === 'recordPrint') {
+            payload.forEach(r => {
+                let idx = localData.findIndex(x => x.ID === r.EmployeeID);
+                if (idx > -1) localData[idx].Status = 'พิมพ์แล้ว';
+            });
+            localStorage.setItem('gov_db', JSON.stringify(localData));
+            resolve({ status: 'success' });
+        }
+    });
+}
+
+/**
+ * ฟังก์ชันจัดการ Google Sheets สำหรับผู้ใช้งาน
+ */
+function handleGoogleSheetUsers(action, payload) {
+    return fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, payload: payload, data: payload })
+    })
+    .then(res => res.json());
+}
 
         function loadEmployees() {
             fetchAPI('getEmployees').then(res => {
