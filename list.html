@@ -182,7 +182,7 @@
                 </a>
             </nav>
             <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
-                <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-blue-500 shadow-sm">
+                <img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-blue-500 shadow-sm transform transition-transform duration-300 hover:scale-150 relative z-20 cursor-pointer">
                 <div>
                     <p class="text-gray-500 text-sm font-semibold">นายภูวนาท สุขประเสริฐ</p>
                     <p class="text-xs text-gray-500">หัวหน้าฝ่ายบุคลากรทางการศึกษา</p>
@@ -1073,19 +1073,26 @@
         }
 
         function calculateAndSetExpireDate(issueDateObj) {
-            if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
+    if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
 
-            const expDate = new Date(issueDateObj);
-            expDate.setFullYear(expDate.getFullYear() + 6);
-            expDate.setDate(expDate.getDate() - 1);
+    // คัดลอก Object วันที่เพื่อป้องกัน Side Effect
+    const expDate = new Date(issueDateObj.getTime());
+    
+    // บวก 6 ปี และลบ 1 วัน ตามเกณฑ์บัตรประจำตัว
+    expDate.setFullYear(expDate.getFullYear() + 6);
+    expDate.setDate(expDate.getDate() - 1);
 
-            const expStr = expDate.toISOString().split('T')[0];
+    // ดึงค่าตาม Local Timezone โดยตรง ป้องกันปัญหา UTC Offset จาก toISOString()
+    const year = expDate.getFullYear();
+    const month = String(expDate.getMonth() + 1).padStart(2, '0');
+    const day = String(expDate.getDate()).padStart(2, '0');
+    const expStr = `${year}-${month}-${day}`;
 
-            if (expirePicker) {
-                expirePicker.setDate(expStr, true);
-            }
-            document.getElementById('f_expireDate').value = expStr;
-        }
+    if (expirePicker) {
+        expirePicker.setDate(expStr, false); // ส่ง false เพื่อไม่ให้เกิด Event Loop ซ้ำซ้อน
+    }
+    document.getElementById('f_expireDate').value = expStr;
+}
 
         function formatBuddhistYear(instance) {
             if (!instance || !instance.altInput) return;
