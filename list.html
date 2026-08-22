@@ -626,11 +626,13 @@
             agency_logo: '' 
         };
 
+        // 🟢 1. แก้ไขวัตถุ tplConfig เพิ่มพิกัด academicStandingX, academicStandingY, academicStandingSize
         let tplConfig = {
             citizenIdX: 20, citizenIdY: 18.5, citizenIdSize: 1.5,
             nameX: 17, nameY: 34, nameSize: 1.6,
             positionX: 17, positionY: 43, positionSize: 1.4,
-            bloodTypeX: 17, bloodTypeY: 52, bloodTypeSize: 1.3,
+            academicStandingX: 17, academicStandingY: 48, academicStandingSize: 1.3,
+            bloodTypeX: 17, bloodTypeY: 53, bloodTypeSize: 1.3,
             cardNumX: 74, cardNumY: 59.5, cardNumSize: 1.4,
             issueDateX: 62, issueDateY: 78, expireDateX: 85, expireDateY: 78, dateSize: 1.2,
             headNameX: 65, headNameY: 30, headNameSize: 1.4,
@@ -1392,14 +1394,16 @@
             nav('form');
         }
 
+        // 🟢 2. เพิ่มข้อมูลตัวอย่าง AcademicStanding ใน Mock Data เพื่อลองปรับการตั้งค่า
         function getMockEmp() {
             return {
                 CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายตัวอย่าง ทดสอบระบบ',
-                PositionName: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', CardNumber: 'TEST-001',
+                PositionName: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', AcademicStanding: '(นักบริหารงานท้องถิ่น)', CardNumber: 'TEST-001',
                 BloodType: 'โอ', PositionType: 'พนักงานเทศบาล', IssueDate: '2026-08-22', ExpireDate: '2032-08-21'
             };
         }
 
+        // 🟢 3. เพิ่มปุ่มตั้งค่าใน UI ของหน้าตั้งค่า Template
         function buildTemplateConfigUI() {
             const p = document.getElementById('config-panel');
             p.innerHTML = '';
@@ -1417,6 +1421,10 @@
             createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
             createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
             createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
+            
+            // 🟢 เพิ่มส่วนปรับตั้งค่า "ชื่อสายงานผู้บริหาร"
+            createGroup('ชื่อสายงานผู้บริหาร', [{id:'academicStandingX', label:'แกน X (%)'}, {id:'academicStandingY', label:'แกน Y (%)'}, {id:'academicStandingSize', label:'ขนาด Font (vw)'}]);
+
             createGroup('ประเภทพนักงาน', [{id:'positionTypeX', label:'แกน X (%)'}, {id:'positionTypeY', label:'แกน Y (%)'}, {id:'positionTypeSize', label:'ขนาด Font (vw)'}]);
             createGroup('หมู่โลหิต', [{id:'bloodTypeX', label:'แกน X (%)'}, {id:'bloodTypeY', label:'แกน Y (%)'}, {id:'bloodTypeSize', label:'ขนาด Font (vw)'}]);
             createGroup('เลขที่บัตร', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
@@ -1445,6 +1453,7 @@
             if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
         }
 
+        // 🟢 4. แสดงผล "ชื่อสายงานผู้บริหาร" ลงบนการ์ดในพิกัดที่กำหนด
         function renderPreviewBoard(emp, targetContainerId) {
             const container = document.getElementById(targetContainerId);
             if(!container) return;
@@ -1470,6 +1479,12 @@
             html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
             html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
             html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
+
+            // 🟢 เพิ่มการแสดงผลข้อความสายงานผู้บริหาร (ถ้ามี หรือแสดงในหน้าพรีวิว Template)
+            const academicVal = emp.AcademicStanding ? emp.AcademicStanding : (targetContainerId === 'editor-preview-board' ? '(นักบริหารงานท้องถิ่น)' : '');
+            if (academicVal) {
+                html += createTxt('academicStanding', academicVal, tplConfig.academicStandingX, tplConfig.academicStandingY, tplConfig.academicStandingSize, '300');
+            }
             
             const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
             html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '300');
