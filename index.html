@@ -11,6 +11,10 @@
     <!-- SweetAlert2 & jQuery -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Cropper.js CSS & JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
     <style>
         body {
             box-sizing: border-box;
@@ -146,7 +150,7 @@
                             <img id="profileImagePreview" src="https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128" alt="ตัวอย่างรูปโปรไฟล์" class="w-20 h-20 rounded-full object-cover border-2 border-blue-100 shadow-sm">
                         </div>
                         <div class="flex-1 space-y-1 w-full text-center sm:text-left">
-                            <label class="block text-xs font-semibold text-gray-700">รูปโปรไฟล์ (JPG, PNG, WEBP / Max 2MB)</label>
+                            <label class="block text-xs font-semibold text-gray-700">รูปโปรไฟล์ (JPG, PNG, WEBP / Max 5MB)</label>
                             <input type="file" id="profile_image_input" accept="image/jpeg,image/png,image/webp" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
                             <p id="profileImageName" class="text-[11px] text-gray-400 truncate max-w-[200px]"></p>
                         </div>
@@ -249,12 +253,28 @@
         </div>
     </div>
 
-   <!-- JavaScript สำหรับควบคุมการทำงานและเชื่อมต่อ Google Apps Script ผ่าน API -->
+    <!-- Modal สำหรับ Crop รูปภาพสี่เหลี่ยมจัตุรัส -->
+    <div id="cropModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden px-4">
+        <div class="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-gray-100">
+            <h4 class="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+                ✂️ ครอบตัดรูปภาพ (สี่เหลี่ยมจัตุรัส 1:1)
+            </h4>
+            <div class="w-full max-h-[50vh] overflow-hidden rounded-xl bg-slate-900 flex justify-center items-center mb-4">
+                <img id="cropImageTarget" class="max-w-full block">
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" id="cancelCropBtn" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-200 transition">ยกเลิก</button>
+                <button type="button" id="confirmCropBtn" class="px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition shadow">ครอบตัดและใช้งาน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript สำหรับควบคุมการทำงาน -->
     <script>
-        // 🛑 กรุณานำ URL ที่ได้จากการ Deploy Web App ของ Google Apps Script มาใส่ตรงนี้
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxHm0hcw4jMdY4s1dvlWsjWeiWkY2bXfKsSsaS8EeWPQVBL5HA3eRUhxJ-Ik-9hCxhiEw/exec';
 
         let profileBase64Data = '';
+        let cropperInstance = null;
 
         $(document).ready(function() {
             const $modal = $('#registerModal');
@@ -263,7 +283,6 @@
             const eyeOpenSvg = `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
             const eyeClosedSvg = `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.032 10.032 0 012.238-3.792m3.674-2.222A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.027 10.027 0 01-4.132 5.411m0 0L21 21" /></svg>`;
 
-            // แสดง QR Code ติดต่อผู้ดูแลระบบ
             $('#openQrModal').on('click', function(e) {
                 e.preventDefault();
                 Swal.fire({
@@ -278,9 +297,7 @@
                 });
             });
 
-            // -----------------------------------------------------------
-            // 1. ระบบจัดการฟอร์มเข้าสู่ระบบ (LOGIN PROCESS VIA API)
-            // -----------------------------------------------------------
+            // 1. ระบบจัดการฟอร์มเข้าสู่ระบบ
             $('#loginForm').on('submit', function(e) {
                 e.preventDefault();
                 
@@ -304,7 +321,6 @@
                     didOpen: () => { Swal.showLoading(); }
                 });
 
-                // ส่ง Request ไปยัง Google Apps Script Web App
                 fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -346,9 +362,7 @@
                 });
             });
 
-            // -----------------------------------------------------------
-            // 2. ระบบ Modal และลงทะเบียนใช้งาน (REGISTER PROCESS VIA API)
-            // -----------------------------------------------------------
+            // 2. ระบบ Modal และลงทะเบียนใช้งาน
             function openModal() {
                 $modal.removeClass('hidden');
                 setTimeout(() => {
@@ -370,15 +384,17 @@
                 }, 300);
             }
 
-            // แสดงรูปภาพตัวอย่างและแปลงเป็น Base64
+            // -----------------------------------------------------------
+            // ระบบ CROP รูปภาพ (1:1 Aspect Ratio)
+            // -----------------------------------------------------------
             $('#profile_image_input').on('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    if (file.size > 2 * 1024 * 1024) {
+                    if (file.size > 5 * 1024 * 1024) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'ขนาดไฟล์เกินกำหนด',
-                            text: 'กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 2MB',
+                            text: 'กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 5MB',
                             confirmButtonColor: '#2563eb'
                         });
                         this.value = '';
@@ -387,16 +403,67 @@
 
                     const reader = new FileReader();
                     reader.onload = function(evt) {
-                        profileBase64Data = evt.target.result;
-                        $('#profileImagePreview').attr('src', evt.target.result);
-                        $('#profileImageName').text(file.name);
+                        const cropImg = document.getElementById('cropImageTarget');
+                        cropImg.src = evt.target.result;
+
+                        $('#cropModal').removeClass('hidden');
+
+                        if (cropperInstance) {
+                            cropperInstance.destroy();
+                        }
+
+                        // เริ่มการทำงาน Cropper บังคับอัตราส่วน 1:1
+                        cropperInstance = new Cropper(cropImg, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.9,
+                            restore: false,
+                            guides: true,
+                            center: true,
+                            highlight: false,
+                            cropBoxMovable: true,
+                            cropBoxResizable: true,
+                            toggleDragModeOnDblclick: false
+                        });
                     };
                     reader.readAsDataURL(file);
-                } else {
-                    profileBase64Data = '';
-                    $('#profileImagePreview').attr('src', 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff&size=128');
-                    $('#profileImageName').text('');
                 }
+            });
+
+            // ปิด Modal Crop
+            $('#cancelCropBtn').on('click', function() {
+                $('#cropModal').addClass('hidden');
+                $('#profile_image_input').val('');
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+            });
+
+            // ยืนยันการ Crop รูปภาพ
+            $('#confirmCropBtn').on('click', function() {
+                if (!cropperInstance) return;
+
+                // ตัดรูปและย่อขนาดเป็น 300x300px
+                const canvas = cropperInstance.getCroppedCanvas({
+                    width: 300,
+                    height: 300,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high'
+                });
+
+                profileBase64Data = canvas.toDataURL('image/jpeg', 0.85);
+                $('#profileImagePreview').attr('src', profileBase64Data);
+
+                const fileInput = document.getElementById('profile_image_input');
+                if (fileInput.files.length > 0) {
+                    $('#profileImageName').text(fileInput.files[0].name + ' (ครอบตัดเรียบร้อย)');
+                }
+
+                $('#cropModal').addClass('hidden');
+                cropperInstance.destroy();
+                cropperInstance = null;
             });
 
             $('#openRegisterModal').on('click', function(e) {
@@ -414,7 +481,6 @@
                 }
             });
 
-            // สลับเปิด/ปิด รหัสผ่าน
             $('#toggleRegPassword').on('click', function() {
                 const $input = $('#reg_password');
                 const isPassword = $input.attr('type') === 'password';
@@ -429,7 +495,6 @@
                 $(this).html(isPassword ? eyeClosedSvg : eyeOpenSvg);
             });
 
-            // ส่งข้อมูลสมัครสมาชิก
             $('#registerForm').on('submit', function(e) {
                 e.preventDefault();
 
@@ -477,7 +542,6 @@
                     didOpen: () => Swal.showLoading()
                 });
 
-                // ส่งข้อมูลไปยัง Google Apps Script Web App
                 fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
