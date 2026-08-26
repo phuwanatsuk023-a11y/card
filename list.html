@@ -1267,181 +1267,323 @@
             }
         }
 
-       function calculateAndSetExpireDate(issueDateObj) {
+        function calculateAndSetExpireDate(issueDateObj) {
             if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
 
-            // คำนวณวันหมดอายุ: บวก 6 ปี และลบ 1 วัน ตามหลักเกณฑ์บัตรประจำตัว
+            // คัดลอก Object วันที่เพื่อป้องกัน Side Effect
             const expDate = new Date(issueDateObj.getTime());
+            
+            // บวก 6 ปี และลบ 1 วัน ตามเกณฑ์บัตรประจำตัว
             expDate.setFullYear(expDate.getFullYear() + 6);
             expDate.setDate(expDate.getDate() - 1);
 
-            const yyyy = expDate.getFullYear();
-            const mm = String(expDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(expDate.getDate()).padStart(2, '0');
-            const formattedDate = `${yyyy}-${mm}-${dd}`;
+            // ดึงค่าตาม Local Timezone โดยตรง ป้องกันปัญหา UTC Offset จาก toISOString()
+            const year = expDate.getFullYear();
+            const month = String(expDate.getMonth() + 1).padStart(2, '0');
+            const day = String(expDate.getDate()).padStart(2, '0');
+            const expStr = `${year}-${month}-${day}`;
 
             if (expirePicker) {
-                expirePicker.setDate(formattedDate, true);
-            } else {
-                document.getElementById('f_expireDate').value = formattedDate;
+                expirePicker.setDate(expStr, false); // ส่ง false เพื่อไม่ให้เกิด Event Loop ซ้ำซ้อน
+                formatBuddhistYear(expirePicker); // แปลงปี ค.ศ. เป็น พ.ศ. ใน altInput
             }
+            document.getElementById('f_expireDate').value = expStr;
         }
 
         function formatBuddhistYear(instance) {
             if (!instance || !instance.altInput) return;
-            const inputVal = instance.altInput.value;
-            if (!inputVal) return;
-            
-            // แปลง ค.ศ. เป็น พ.ศ. ในช่องแสดงผล (+543)
-            const yearMatch = inputVal.match(/\b(19|20)\d{2}\b/);
-            if (yearMatch) {
-                const ceYear = parseInt(yearMatch[0], 10);
-                const beYear = ceYear + 543;
-                instance.altInput.value = inputVal.replace(yearMatch[0], beYear);
+            if (instance.selectedDates.length > 0) {
+                const date = instance.selectedDates[0];
+                const day = date.getDate();
+                const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                const month = monthNames[date.getMonth()];
+                const yearBE = date.getFullYear() + 543;
+                instance.altInput.value = `${day} ${month} ${yearBE}`;
             }
         }
 
-        // ==========================================
-        // 1. ระบบนำทางและสลับมุมมอง (Navigation)
-        // ==========================================
         function nav(viewId) {
-            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
-            const targetSec = document.getElementById(`sec-${viewId}`);
-            if (targetSec) targetSec.classList.remove('hidden');
-
-            document.querySelectorAll('.menu-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-600', 'font-semibold');
-                btn.classList.add('border-transparent', 'text-gray-600');
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.menu-btn').forEach(el => {
+                el.classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-600');
+                el.classList.add('text-gray-600', 'border-transparent');
             });
 
-            if (viewId === 'employees') renderEmployeeTable();
-            if (viewId === 'account-settings') loadUsersList();
-            if (viewId === 'template-settings') renderEditorPreview();
+            document.getElementById(`sec-${viewId}`).classList.remove('hidden');
 
-            // แจ้งเตือนเมื่อยังใช้หน่วยงานเริ่มต้น
+            if (viewId === 'dashboard') updateDashboard();
+            if (viewId === 'employees') renderEmployeeTable();
+            if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
+            if (viewId === 'account-settings') loadUsersList();
+        }
+
+        function openAddForm() {
+            document.getElementById('f_id').value = '';
+            document.getElementById('emp-form').reset();
+            populateMasterDropdowns();
+            document.getElementById('f_academic_standing_wrapper').classList.add('hidden');
+            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลบุคลากรใหม่';
+
+            const today = new Date();
+            const issueStr = today.toISOString().split('T')[0];
+
+            if (issuePicker) issuePicker.setDate(issueStr, true);
+            calculateAndSetExpireDate(today);
+
+            nav('form');
+        }
+
+        function showToast(msg, type='info') {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `fixed bottom-4 right-4 px-6 py-3 rounded shadow-lg transform transition-all duration-300 z-50 ${type==='error'?'bg-red-600':'bg-gray-800'} text-white`;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function fetchAPI(action, payload = null) {
+            const localActions = ['getEmployees', 'saveEmployee', 'deleteEmployee', 'recordPrint', 'getAgencySettings', 'saveAgencySettings'];
+            
+            if (localActions.includes(action)) {
+                return handleLocalStorageData(action, payload);
+            } 
+
+            return handleGoogleSheetUsers(action, payload);
+        }
+
+        function handleLocalStorageData(action, payload) {
+            return new Promise((resolve) => {
+                let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
+
+                if (action === 'getEmployees') {
+                    resolve({ status: 'success', data: localData });
+                } 
+                else if (action === 'saveEmployee') {
+                    if (payload.ID) {
+                        let idx = localData.findIndex(x => x.ID === payload.ID);
+                        if (idx > -1) localData[idx] = { ...localData[idx], ...payload };
+                    } else {
+                        payload.ID = Date.now().toString();
+                        payload.Status = 'รอจัดทำ';
+                        localData.push(payload);
+                    }
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success', data: { id: payload.ID } });
+                } 
+                else if (action === 'deleteEmployee') {
+                    localData = localData.filter(x => String(x.ID) !== String(payload.ID));
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success' });
+                }
+                else if (action === 'recordPrint') {
+                    payload.forEach(r => {
+                        let idx = localData.findIndex(x => x.ID === r.EmployeeID);
+                        if (idx > -1) localData[idx].Status = 'พิมพ์แล้ว';
+                    });
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success' });
+                }
+                else if (action === 'getAgencySettings') {
+                    let settings = JSON.parse(localStorage.getItem('gov_agency_settings')) || agencySettings;
+                    resolve({ status: 'success', data: settings });
+                }
+                else if (action === 'saveAgencySettings') {
+                    localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
+                    resolve({ status: 'success' });
+                }
+            });
+        }
+
+        function handleGoogleSheetUsers(action, payload) {
+            return fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: action, payload: payload, data: payload })
+            })
+            .then(res => res.json());
+        }
+
+        function loadEmployees() {
+            fetchAPI('getEmployees').then(res => {
+                if(res.status === 'success') {
+                    db.employees = res.data;
+                    updateDashboard();
+                    if(!document.getElementById('sec-employees').classList.contains('hidden')) {
+                        renderEmployeeTable();
+                    }
+                }
+            });
+        }
+
+        function deleteEmployee(id) {
+            if(!confirm('คุณต้องการลบข้อมูลพนักงานรายนี้ใช่หรือไม่?')) return;
+            fetchAPI('deleteEmployee', { ID: id }).then(res => {
+                if(res.status === 'success') {
+                    showToast('ลบข้อมูลเรียบร้อยแล้ว');
+                    loadEmployees();
+                } else {
+                    showToast('ไม่สามารถลบข้อมูลได้', 'error');
+                }
+            });
+        }
+
+        function loadAgencySettings() {
+            fetchAPI('getAgencySettings').then(res => {
+                if(res && res.status === 'success' && res.data) {
+                    agencySettings = res.data;
+                    applyAgencySettingsUI();
+                }
+                checkAgencyDefaultSetup();
+            });
+        }
+
+        // ตรวจสอบว่ายังไม่ได้ตั้งค่าหน่วยงาน (ยังเป็นค่าเริ่มต้น "เทศบาลตำบลตัวอย่าง") หรือไม่
+        function checkAgencyDefaultSetup() {
             if (agencySettings.agency_name === 'เทศบาลตำบลตัวอย่าง') {
-                const warnModal = document.getElementById('modal-setup-warning');
-                if (warnModal && viewId === 'dashboard') warnModal.classList.remove('hidden');
+                openSetupWarningModal();
             }
+        }
+
+        function openSetupWarningModal() {
+            document.getElementById('modal-setup-warning').classList.remove('hidden');
         }
 
         function closeSetupWarningModal() {
             document.getElementById('modal-setup-warning').classList.add('hidden');
         }
 
-        // ==========================================
-        // 2. การสื่อสารกับ API (Google Apps Script / LocalStorage)
-        // ==========================================
-        async function fetchAPI(action, data = {}) {
-            if (USE_LOCAL || !GAS_URL) {
-                return handleLocalAPI(action, data);
-            }
-            try {
-                const res = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action, data })
-                });
-                return await res.json();
-            } catch (err) {
-                console.warn('การเชื่อมต่อเซิร์ฟเวอร์ขัดข้อง ระบบจะสลับไปใช้ LocalStorage:', err);
-                return handleLocalAPI(action, data);
-            }
-        }
+        function applyAgencySettingsUI() {
+            document.getElementById('f_head_name').value = agencySettings.head_name || '';
+            document.getElementById('f_head_position').value = agencySettings.head_position || '';
+            document.getElementById('f_agency_name').value = agencySettings.agency_name || '';
+            document.getElementById('f_province').value = agencySettings.province || '';
+            document.getElementById('f_agency_logo').value = agencySettings.agency_logo || '';
 
-        function handleLocalAPI(action, data) {
-            let localData = JSON.parse(localStorage.getItem('gov_db') || '[]');
-            if (action === 'getEmployees') {
-                return Promise.resolve({ status: 'success', data: localData });
-            }
-            if (action === 'saveEmployee') {
-                if (data.id) {
-                    const idx = localData.findIndex(item => String(item.ID) === String(data.id));
-                    if (idx !== -1) localData[idx] = { ...localData[idx], ...data };
-                } else {
-                    data.ID = Date.now().toString();
-                    localData.push(data);
+            const headerLogoImg = document.getElementById('header-logo');
+            const headerLogoIcon = document.getElementById('header-logo-icon');
+
+            if(agencySettings.agency_logo) {
+                document.getElementById('agency_logo_preview').src = agencySettings.agency_logo;
+                document.getElementById('agency_logo_preview').classList.remove('hidden');
+                document.getElementById('agency_logo_placeholder').classList.add('hidden');
+                
+                if (headerLogoImg) {
+                    headerLogoImg.src = agencySettings.agency_logo;
+                    headerLogoImg.classList.remove('hidden');
                 }
-                localStorage.setItem('gov_db', JSON.stringify(localData));
-                return Promise.resolve({ status: 'success', message: 'บันทึกข้อมูลเรียบร้อย (Local)' });
+                if (headerLogoIcon) headerLogoIcon.classList.add('hidden');
+            } else {
+                document.getElementById('agency_logo_preview').classList.add('hidden');
+                document.getElementById('agency_logo_placeholder').classList.remove('hidden');
+                
+                if (headerLogoImg) headerLogoImg.classList.add('hidden');
+                if (headerLogoIcon) headerLogoIcon.classList.remove('hidden');
             }
-            if (action === 'deleteEmployee') {
-                localData = localData.filter(item => String(item.ID) !== String(data.id));
-                localStorage.setItem('gov_db', JSON.stringify(localData));
-                return Promise.resolve({ status: 'success', message: 'ลบข้อมูลเรียบร้อย (Local)' });
+
+            if(agencySettings.agency_name) {
+                const prov = agencySettings.province ? ` ${agencySettings.province}` : '';
+                document.getElementById('header-org-name').innerText = `${agencySettings.agency_name}${prov}`;
             }
-            return Promise.resolve({ status: 'error', message: 'ไม่พบคำสั่งนี้' });
         }
 
-        // ==========================================
-        // 3. ระบบจัดการข้อมูลพนักงาน (Employees CRUD & List)
-        // ==========================================
-        function loadEmployees() {
-            fetchAPI('getEmployees').then(res => {
-                if (res && res.data) {
-                    db.employees = res.data;
-                } else if (Array.isArray(res)) {
-                    db.employees = res;
-                }
-                updateDashboardStats();
-                renderEmployeeTable();
-            }).catch(err => console.error('Error loading employees:', err));
+        function handleAgencyLogoUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            if(file.size > 2 * 1024 * 1024) {
+                showToast('ขนาดไฟล์ใหญ่เกินไป (ต้องไม่เกิน 2MB)', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64Img = event.target.result;
+                document.getElementById('agency_logo_preview').src = base64Img;
+                document.getElementById('agency_logo_preview').classList.remove('hidden');
+                document.getElementById('agency_logo_placeholder').classList.add('hidden');
+                document.getElementById('f_agency_logo').value = base64Img;
+            };
+            reader.readAsDataURL(file);
         }
 
-        function updateDashboardStats() {
-            const total = db.employees.length;
-            const printed = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
-            const pending = db.employees.filter(e => e.Status === 'พร้อมพิมพ์' || !e.Status).length;
+        function saveAgencySettings() {
+            const payload = {
+                head_name: document.getElementById('f_head_name').value,
+                head_position: document.getElementById('f_head_position').value,
+                agency_name: document.getElementById('f_agency_name').value,
+                province: document.getElementById('f_province').value,
+                agency_logo: document.getElementById('f_agency_logo').value
+            };
+
+            agencySettings = payload;
+            applyAgencySettingsUI();
+
+            fetchAPI('saveAgencySettings', payload).then(res => {
+                showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
+            });
+        }
+
+        function resetAgencySettings() {
+            if(!confirm('คุณต้องการรีเซ็ตค่าการตั้งค่าหน่วยงานเป็นค่าเริ่มต้นใช่หรือไม่?')) return;
+            agencySettings = {
+                head_name: 'นายสมศักดิ์ รักชาติ', 
+                head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
+                agency_name: 'เทศบาลตำบลตัวอย่าง', 
+                province: 'จังหวัดตัวอย่าง', 
+                agency_logo: '' 
+            };
+            applyAgencySettingsUI();
+            saveAgencySettings();
+            showToast('รีเซ็ตการตั้งค่าหน่วยงานสำเร็จ', 'success');
+        }
+
+        function saveSystemSettings() {
+            GAS_URL = document.getElementById('set_gas_url').value.trim();
+            localStorage.setItem('GAS_URL', GAS_URL);
+            USE_LOCAL = GAS_URL === '';
+            showToast('บันทึกการเชื่อมต่อสำเร็จ ระบบจะรีโหลด...');
+            setTimeout(()=>location.reload(), 1000);
+        }
+
+        function updateDashboard() {
+            document.getElementById('stat-total').innerText = db.employees.length;
+            document.getElementById('stat-pending').innerText = db.employees.filter(e => e.Status === 'รอจัดทำ' || e.Status === 'พร้อมพิมพ์').length;
+            document.getElementById('stat-printed').innerText = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
             
-            const today = new Date().toISOString().split('T')[0];
-            const expired = db.employees.filter(e => e.ExpireDate && e.ExpireDate < today).length;
-
-            if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = total;
-            if (document.getElementById('stat-pending')) document.getElementById('stat-pending').innerText = pending;
-            if (document.getElementById('stat-printed')) document.getElementById('stat-printed').innerText = printed;
-            if (document.getElementById('stat-expired')) document.getElementById('stat-expired').innerText = expired;
+            let exp = 0;
+            const now = new Date();
+            db.employees.forEach(e => {
+                if(e.ExpireDate && new Date(e.ExpireDate) < now) exp++;
+            });
+            document.getElementById('stat-expired').innerText = exp;
         }
 
         function renderEmployeeTable() {
             const tbody = document.getElementById('emp-table-body');
-            if (!tbody) return;
-
-            const keyword = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+            const search = document.getElementById('search-input').value.toLowerCase();
             tbody.innerHTML = '';
+            
+            db.employees.forEach(emp => {
+                const searchStr = `${emp.EmployeeName} ${emp.CitizenID} ${emp.CardNumber}`.toLowerCase();
+                if (search && !searchStr.includes(search)) return;
 
-            const filtered = db.employees.filter(emp => {
-                const name = (emp.EmployeeName || emp.name || '').toLowerCase();
-                const cid = (emp.CitizenID || emp.citizenId || '').toLowerCase();
-                const cardNo = (emp.CardNumber || emp.cardNum || '').toLowerCase();
-                return name.includes(keyword) || cid.includes(keyword) || cardNo.includes(keyword);
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-6 text-gray-400">ไม่พบข้อมูลบุคลากร</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(emp => {
-                const id = emp.ID || emp.id;
-                const statusStr = emp.Status || 'พร้อมพิมพ์';
-                let statusBadge = 'bg-yellow-100 text-yellow-800';
-                if (statusStr === 'พิมพ์แล้ว') statusBadge = 'bg-green-100 text-green-800';
+                const statusColor = emp.Status === 'พิมพ์แล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
 
                 const tr = document.createElement('tr');
                 tr.className = 'border-b hover:bg-gray-50';
                 tr.innerHTML = `
-                    <td class="p-3 text-center"><input type="checkbox" class="emp-checkbox" value="${id}"></td>
-                    <td class="p-3 font-mono text-xs">${emp.CitizenID || emp.citizenId || '-'}</td>
-                    <td class="p-3 font-semibold text-gray-800">${emp.EmployeeName || emp.name || '-'}</td>
-                    <td class="p-3 text-xs">${emp.PositionName || emp.positionName || '-'}<br><span class="text-gray-400">${emp.SchoolAffiliation || emp.schoolAffiliation || '-'}</span></td>
-                    <td class="p-3 text-xs">${emp.PositionType || emp.positionType || '-'}</td>
-                    <td class="p-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusBadge}">${statusStr}</span></td>
+                    <td class="p-3 text-center"><input type="checkbox" class="emp-checkbox" value="${emp.ID}"></td>
+                    <td class="p-3 font-mono text-xs">${formatCitizenId(emp.CitizenID || '')}</td>
+                    <td class="p-3 font-semibold">${emp.EmployeeName || '-'}</td>
+                    <td class="p-3 text-xs">${emp.PositionName || '-'}<br><span class="text-gray-400">${emp.SchoolAffiliation || '-'}</span></td>
+                    <td class="p-3 text-xs">${emp.PositionType || '-'}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${statusColor}">${emp.Status}</span></td>
                     <td class="p-3 text-center">
-                        <div class="flex justify-center gap-1">
-                            <button onclick="prepareBatchPrint('${id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="พิมพ์บัตร"><i class="fa-solid fa-print"></i></button>
-                            <button onclick="editEmployee('${id}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteEmployee('${id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="ลบ"><i class="fa-solid fa-trash"></i></button>
-                        </div>
+                        <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
+                        <button onclick="previewCard(['${emp.ID}'])" class="text-blue-700 hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
+                        <button onclick="deleteEmployee('${emp.ID}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบข้อมูล"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1449,353 +1591,383 @@
         }
 
         function toggleSelectAll() {
-            const selectAll = document.getElementById('selectAll');
-            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = selectAll.checked);
-        }
-
-        function openAddForm() {
-            document.getElementById('f_id').value = '';
-            document.getElementById('emp-form').reset();
-            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลบุคลากรใหม่';
-            
-            const todayStr = new Date().toISOString().split('T')[0];
-            if (issuePicker) {
-                issuePicker.setDate(todayStr, true);
-                calculateAndSetExpireDate(new Date());
-            }
-            nav('form');
-        }
-
-        function editEmployee(id) {
-            const emp = db.employees.find(e => String(e.ID || e.id) === String(id));
-            if (!emp) return;
-
-            document.getElementById('f_id').value = id;
-            document.getElementById('f_citizenId').value = emp.CitizenID || emp.citizenId || '';
-            document.getElementById('f_employeeName').value = emp.EmployeeName || emp.name || '';
-            document.getElementById('f_schoolAffiliation').value = emp.SchoolAffiliation || emp.schoolAffiliation || '';
-            document.getElementById('f_positionName').value = emp.PositionName || emp.positionName || '';
-            document.getElementById('f_academicStanding').value = emp.AcademicStanding || emp.academicStanding || '';
-            document.getElementById('f_positionType').value = emp.PositionType || emp.positionType || '';
-            document.getElementById('f_gender').value = emp.Gender || emp.gender || '';
-            document.getElementById('f_bloodType').value = emp.BloodType || emp.bloodType || '';
-            document.getElementById('f_cardType').value = emp.CardType || emp.cardType || 'บัตรประจำตัวเจ้าหน้าที่ของรัฐ';
-            document.getElementById('f_cardNum').value = emp.CardNumber || emp.cardNumber || emp.cardNum || '';
-
-            if (issuePicker && (emp.IssueDate || emp.issueDate)) issuePicker.setDate(emp.IssueDate || emp.issueDate, true);
-            if (expirePicker && (emp.ExpireDate || emp.expireDate)) expirePicker.setDate(emp.ExpireDate || emp.expireDate, true);
-
-            document.getElementById('form-title').innerText = 'แก้ไขข้อมูลบุคลากร';
-            nav('form');
+            const chk = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = chk);
         }
 
         function saveEmployee(e) {
             e.preventDefault();
             const payload = {
-                id: document.getElementById('f_id').value,
-                CitizenID: document.getElementById('f_citizenId').value.trim(),
-                EmployeeName: document.getElementById('f_employeeName').value.trim(),
+                ID: document.getElementById('f_id').value,
+                CitizenID: document.getElementById('f_citizenId').value,
+                EmployeeName: document.getElementById('f_employeeName').value,
                 SchoolAffiliation: document.getElementById('f_schoolAffiliation').value,
-                PositionName: document.getElementById('f_positionName').value.trim(),
-                AcademicStanding: document.getElementById('f_academicStanding').value.trim(),
+                PositionName: document.getElementById('f_positionName').value,
+                AcademicStanding: document.getElementById('f_academicStanding').value,
                 PositionType: document.getElementById('f_positionType').value,
+                CardType: document.getElementById('f_cardType').value,
                 Gender: document.getElementById('f_gender').value,
                 BloodType: document.getElementById('f_bloodType').value,
-                CardType: document.getElementById('f_cardType').value,
-                CardNumber: document.getElementById('f_cardNum').value.trim(),
+                CardNumber: document.getElementById('f_cardNum').value,
                 IssueDate: document.getElementById('f_issueDate').value,
-                ExpireDate: document.getElementById('f_expireDate').value,
-                Status: 'พร้อมพิมพ์'
+                ExpireDate: document.getElementById('f_expireDate').value
             };
+
+            const btn = e.submitter;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังบันทึก';
+            btn.disabled = true;
 
             fetchAPI('saveEmployee', payload).then(res => {
-                showToast(res.message || 'บันทึกข้อมูลบุคลากรเรียบร้อย');
+                showToast('บันทึกข้อมูลเรียบร้อย');
                 loadEmployees();
                 nav('employees');
-            }).catch(err => showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error'));
-        }
-
-        function deleteEmployee(id) {
-            if (!confirm('ยืนยันการลบข้อมูลบุคลากรรายนี้?')) return;
-            fetchAPI('deleteEmployee', { id }).then(res => {
-                showToast('ลบข้อมูลเรียบร้อย');
-                loadEmployees();
-            }).catch(err => showToast('ไม่สามารถลบข้อมูลได้', 'error'));
-        }
-
-        // ==========================================
-        // 4. ระบบตั้งค่าหน่วยงาน (Agency Settings)
-        // ==========================================
-        function loadAgencySettings() {
-            document.getElementById('f_head_name').value = agencySettings.head_name || '';
-            document.getElementById('f_head_position').value = agencySettings.head_position || '';
-            document.getElementById('f_agency_name').value = agencySettings.agency_name || '';
-            document.getElementById('f_province').value = agencySettings.province || '';
-            
-            const logoPreview = document.getElementById('agency_logo_preview');
-            const logoPlaceholder = document.getElementById('agency_logo_placeholder');
-            const headerLogo = document.getElementById('header-logo');
-            const headerIcon = document.getElementById('header-logo-icon');
-            const headerOrg = document.getElementById('header-org-name');
-
-            if (headerOrg) headerOrg.innerText = agencySettings.agency_name || 'ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ';
-
-            if (agencySettings.agency_logo) {
-                if (logoPreview) { logoPreview.src = agencySettings.agency_logo; logoPreview.classList.remove('hidden'); }
-                if (logoPlaceholder) logoPlaceholder.classList.add('hidden');
-                if (headerLogo) { headerLogo.src = agencySettings.agency_logo; headerLogo.classList.remove('hidden'); }
-                if (headerIcon) headerIcon.classList.add('hidden');
-            }
-        }
-
-        function saveAgencySettings() {
-            agencySettings = {
-                head_name: document.getElementById('f_head_name').value.trim(),
-                head_position: document.getElementById('f_head_position').value.trim(),
-                agency_name: document.getElementById('f_agency_name').value.trim(),
-                province: document.getElementById('f_province').value.trim(),
-                agency_logo: document.getElementById('f_agency_logo').value || agencySettings.agency_logo || ''
-            };
-            localStorage.setItem('gov_agency_settings', JSON.stringify(agencySettings));
-            loadAgencySettings();
-            showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อย');
-        }
-
-        function resetAgencySettings() {
-            if (!confirm('ยืนยันการคืนค่าเริ่มต้นหน่วยงาน?')) return;
-            localStorage.removeItem('gov_agency_settings');
-            agencySettings = { head_name: 'นายตัวอย่าง รักชาติ', head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', agency_name: 'เทศบาลตำบลตัวอย่าง', province: 'จังหวัดตัวอย่าง', agency_logo: '' };
-            loadAgencySettings();
-            showToast('รีเซ็ตค่าเริ่มต้นเรียบร้อย');
-        }
-
-        function handleAgencyLogoUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const base64 = evt.target.result;
-                document.getElementById('f_agency_logo').value = base64;
-                const preview = document.getElementById('agency_logo_preview');
-                preview.src = base64;
-                preview.classList.remove('hidden');
-                document.getElementById('agency_logo_placeholder').classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // ==========================================
-        // 5. บรรณาธิการจัดตำแหน่ง Template (Template Settings)
-        // ==========================================
-        function buildTemplateConfigUI() {
-            const panel = document.getElementById('config-panel');
-            if (!panel) return;
-            panel.innerHTML = '';
-
-            const keys = [
-                { key: 'citizenId', label: 'เลขประจำตัวประชาชน' },
-                { key: 'name', label: 'ชื่อ - นามสกุล' },
-                { key: 'position', label: 'ตำแหน่ง' },
-                { key: 'academicStanding', label: 'สายงานผู้บริหาร' },
-                { key: 'cardType', label: 'ประเภทบัตร' },
-                { key: 'positionType', label: 'ประเภทพนักงาน' },
-                { key: 'bloodType', label: 'หมู่โลหิต' },
-                { key: 'cardNum', label: 'เลขที่บัตร' },
-                { key: 'issueDate', label: 'วันที่ออกบัตร / หมดอายุ' },
-                { key: 'headName', label: 'ชื่อผู้ลงนาม' },
-                { key: 'headPosition', label: 'ตำแหน่งผู้ลงนาม' },
-                { key: 'agencyProvince', label: 'หน่วยงาน & จังหวัด' }
-            ];
-
-            keys.forEach(item => {
-                const k = item.key;
-                const div = document.createElement('div');
-                div.className = 'p-3 border rounded-lg bg-gray-50 text-xs space-y-2';
-                div.innerHTML = `
-                    <div class="font-bold text-gray-700">${item.label}</div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label>X (%)</label><input type="number" step="0.1" value="${tplConfig[k+'X'] || 0}" onchange="updateTplConfig('${k}X', this.value)" class="w-full border rounded p-1"></div>
-                        <div><label>Y (%)</label><input type="number" step="0.1" value="${tplConfig[k+'Y'] || 0}" onchange="updateTplConfig('${k}Y', this.value)" class="w-full border rounded p-1"></div>
-                        <div><label>Size (rem)</label><input type="number" step="0.1" value="${tplConfig[k+'Size'] || tplConfig.dateSize || 1.8}" onchange="updateTplConfig('${k+'Size'}', this.value)" class="w-full border rounded p-1"></div>
-                    </div>
-                `;
-                panel.appendChild(div);
+            }).finally(() => {
+                btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล';
+                btn.disabled = false;
             });
-            renderEditorPreview();
         }
 
-        function updateTplConfig(key, val) {
-            tplConfig[key] = parseFloat(val) || 0;
-            renderEditorPreview();
+        function editEmployee(id) {
+            if (!db.employees || db.employees.length === 0) {
+                showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
+                return;
+            }
+            const emp = db.employees.find(x => String(x.ID) === String(id));
+            if(!emp) {
+                showToast('ไม่พบข้อมูลพนักงานรายนี้', 'error');
+                return;
+            }
+            
+            populateMasterDropdowns();
+
+            document.getElementById('form-title').innerText = 'แก้ไขข้อมูลบุคลากร';
+            document.getElementById('f_id').value = emp.ID;
+            document.getElementById('f_citizenId').value = formatCitizenId(emp.CitizenID || '');
+            document.getElementById('f_employeeName').value = emp.EmployeeName || '';
+            document.getElementById('f_schoolAffiliation').value = emp.SchoolAffiliation || '';
+            document.getElementById('f_positionName').value = emp.PositionName || '';
+            document.getElementById('f_academicStanding').value = emp.AcademicStanding || '';
+            document.getElementById('f_positionType').value = emp.PositionType || '';
+            document.getElementById('f_cardType').value = emp.CardType || '';
+            document.getElementById('f_gender').value = emp.Gender || '';
+            document.getElementById('f_bloodType').value = emp.BloodType || '';
+            document.getElementById('f_cardNum').value = emp.CardNumber || '';
+            
+            const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
+            if (issuePicker) {
+                const issueDateStr = formatD(emp.IssueDate);
+                issuePicker.setDate(issueDateStr, true);
+                if (emp.IssueDate) {
+                    calculateAndSetExpireDate(new Date(emp.IssueDate));
+                }
+            }
+            if (emp.ExpireDate && expirePicker) {
+                expirePicker.setDate(formatD(emp.ExpireDate), true);
+                formatBuddhistYear(expirePicker);
+            }
+            
+            toggleExecutiveField();
+            nav('form');
+        }
+
+        function getMockEmp() {
+            return {
+                CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายตัวอย่าง ทดสอบระบบ',
+                PositionName: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', AcademicStanding: '(นักบริหารงานท้องถิ่น)', CardNumber: 'TEST-001',
+                BloodType: 'โอ', PositionType: 'พนักงานเทศบาล', CardType: 'บัตรประจำตัวเจ้าหน้าที่รัฐ', IssueDate: '2026-08-22', ExpireDate: '2032-08-21'
+            };
+        }
+
+        function buildTemplateConfigUI() {
+            const p = document.getElementById('config-panel');
+            p.innerHTML = '';
+            
+            const createGroup = (title, keys) => {
+                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200 transition-all duration-200" data-group-key="${keys[0].id}"><h4 class="font-semibold text-blue-600 mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
+                keys.forEach(k => {
+                    html += `<div><label class="block text-xs text-gray-500">${k.label}</label>
+                             <input type="number" step="0.1" id="cfg_${k.id}" value="${tplConfig[k.id] ?? 0}" oninput="updateConfigLive()" class="w-full border rounded px-2 py-1 text-sm"></div>`;
+                });
+                html += `</div></div>`;
+                p.innerHTML += html;
+            }
+
+            createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อสายงานผู้บริหาร', [{id:'academicStandingX', label:'แกน X (%)'}, {id:'academicStandingY', label:'แกน Y (%)'}, {id:'academicStandingSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ประเภทของบัตร', [{id:'cardTypeX', label:'แกน X (%)'}, {id:'cardTypeY', label:'แกน Y (%)'}, {id:'cardTypeSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ประเภทพนักงาน', [{id:'positionTypeX', label:'แกน X (%)'}, {id:'positionTypeY', label:'แกน Y (%)'}, {id:'positionTypeSize', label:'ขนาด Font (vw)'}]);
+            createGroup('หมู่โลหิต', [{id:'bloodTypeX', label:'แกน X (%)'}, {id:'bloodTypeY', label:'แกน Y (%)'}, {id:'bloodTypeSize', label:'ขนาด Font (vw)'}]);
+            createGroup('เลขที่บัตร', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
+            createGroup('วันที่ออก-หมดอายุ', [
+                {id:'issueDateX', label:'ออกบัตร X (%)'}, {id:'issueDateY', label:'ออกบัตร Y (%)'},
+                {id:'expireDateX', label:'หมดอายุ X (%)'}, {id:'expireDateY', label:'หมดอายุ Y (%)'},
+                {id:'dateSize', label:'ขนาด Font (vw)'}
+            ]);
+            
+            createGroup('ชื่อนายก อปท. (ตั้งค่าหน่วยงาน)', [{id:'headNameX', label:'แกน X (%)'}, {id:'headNameY', label:'แกน Y (%)'}, {id:'headNameSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ตำแหน่งนายก อปท.', [{id:'headPositionX', label:'แกน X (%)'}, {id:'headPositionY', label:'แกน Y (%)'}, {id:'headPositionSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อ อปท. + จังหวัด', [{id:'agencyProvinceX', label:'แกน X (%)'}, {id:'agencyProvinceY', label:'แกน Y (%)'}, {id:'agencyProvinceSize', label:'ขนาด Font (vw)'}]);
+        }
+
+        function updateConfigLive() {
+            for(let key in tplConfig) {
+                let el = document.getElementById(`cfg_${key}`);
+                if(el) tplConfig[key] = parseFloat(el.value);
+            }
+            renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
         }
 
         function saveTemplateSettings() {
             localStorage.setItem('gov_tpl_config', JSON.stringify(tplConfig));
-            showToast('บันทึกตำแหน่ง Template เรียบร้อย');
+            showToast('บันทึกตำแหน่ง Template สำเร็จ');
+            if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
         }
 
-        function renderEditorPreview() {
-            const board = document.getElementById('editor-preview-board');
-            if (!board) return;
-            
-            board.querySelectorAll('.overlay-item').forEach(el => el.remove());
+        function highlightConfigGroup(fieldId) {
+            let keyX = fieldId + 'X';
+            if (fieldId === 'issue') keyX = 'issueDateX';
+            if (fieldId === 'expire') keyX = 'expireDateX';
 
-            const sample = {
-                citizenId: '1 2345 67890 12 3',
-                name: 'นายตัวอย่าง สมมติ',
-                position: 'นักทรัพยากรบุคคลปฏิบัติการ',
-                academicStanding: '(นักบริหารงานทั่วไป)',
-                cardType: 'บัตรประจำตัวเจ้าหน้าที่ของรัฐ',
-                positionType: 'พนักงานเทศบาล',
-                bloodType: 'โอ',
-                cardNum: 'C001/2569',
-                issueDate: '22 สิงหาคม 2569',
-                expireDate: '21 สิงหาคม 2575',
-                headName: agencySettings.head_name,
-                headPosition: agencySettings.head_position,
-                agencyProvince: `${agencySettings.agency_name} ${agencySettings.province}`
-            };
+            const inputX = document.getElementById(`cfg_${keyX}`);
+            if (!inputX) return;
 
-            const overlayItems = [
-                { id: 'citizenId', text: sample.citizenId, x: tplConfig.citizenIdX, y: tplConfig.citizenIdY, sz: tplConfig.citizenIdSize },
-                { id: 'name', text: sample.name, x: tplConfig.nameX, y: tplConfig.nameY, sz: tplConfig.nameSize },
-                { id: 'position', text: sample.position, x: tplConfig.positionX, y: tplConfig.positionY, sz: tplConfig.positionSize },
-                { id: 'academicStanding', text: sample.academicStanding, x: tplConfig.academicStandingX, y: tplConfig.academicStandingY, sz: tplConfig.academicStandingSize },
-                { id: 'cardType', text: sample.cardType, x: tplConfig.cardTypeX, y: tplConfig.cardTypeY, sz: tplConfig.cardTypeSize },
-                { id: 'positionType', text: sample.positionType, x: tplConfig.positionTypeX, y: tplConfig.positionTypeY, sz: tplConfig.positionTypeSize },
-                { id: 'bloodType', text: sample.bloodType, x: tplConfig.bloodTypeX, y: tplConfig.bloodTypeY, sz: tplConfig.bloodTypeSize },
-                { id: 'cardNum', text: sample.cardNum, x: tplConfig.cardNumX, y: tplConfig.cardNumY, sz: tplConfig.cardNumSize },
-                { id: 'issueDate', text: sample.issueDate, x: tplConfig.issueDateX, y: tplConfig.issueDateY, sz: tplConfig.dateSize },
-                { id: 'expireDate', text: sample.expireDate, x: tplConfig.expireDateX, y: tplConfig.expireDateY, sz: tplConfig.dateSize },
-                { id: 'headName', text: sample.headName, x: tplConfig.headNameX, y: tplConfig.headNameY, sz: tplConfig.headNameSize },
-                { id: 'headPosition', text: sample.headPosition, x: tplConfig.headPositionX, y: tplConfig.headPositionY, sz: tplConfig.headPositionSize },
-                { id: 'agencyProvince', text: sample.agencyProvince, x: tplConfig.agencyProvinceX, y: tplConfig.agencyProvinceY, sz: tplConfig.agencyProvinceSize }
-            ];
+            const groupDiv = inputX.closest('[data-group-key]');
+            if (groupDiv) {
+                document.querySelectorAll('#config-panel [data-group-key]').forEach(el => {
+                    el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+                });
+                groupDiv.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+                groupDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                inputX.focus();
+            }
+        }
 
-            overlayItems.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'overlay-item font-semibold';
-                el.style.left = item.x + '%';
-                el.style.top = item.y + '%';
-                el.style.fontSize = (item.sz || 1.8) + 'rem';
-                el.innerText = item.text;
-                board.appendChild(el);
+        function attachDragAndDropToEditor() {
+            const container = document.getElementById('editor-preview-board');
+            if (!container) return;
+
+            const items = container.querySelectorAll('.overlay-item');
+            items.forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    
+                    const fieldId = item.id.replace('editor-preview-board_', '');
+                    highlightConfigGroup(fieldId);
+
+                    let keyX = fieldId + 'X';
+                    let keyY = fieldId + 'Y';
+                    if (fieldId === 'issue') { keyX = 'issueDateX'; keyY = 'issueDateY'; }
+                    if (fieldId === 'expire') { keyX = 'expireDateX'; keyY = 'expireDateY'; }
+
+                    const rect = container.getBoundingClientRect();
+                    const startMouseX = e.clientX;
+                    const startMouseY = e.clientY;
+                    const initialX = tplConfig[keyX] || 0;
+                    const initialY = tplConfig[keyY] || 0;
+
+                    const onMouseMove = (moveEvent) => {
+                        const deltaX = ((moveEvent.clientX - startMouseX) / rect.width) * 100;
+                        const deltaY = ((moveEvent.clientY - startMouseY) / rect.height) * 100;
+
+                        const newX = parseFloat(Math.max(0, Math.min(100, initialX + deltaX)).toFixed(1));
+                        const newY = parseFloat(Math.max(0, Math.min(100, initialY + deltaY)).toFixed(1));
+
+                        tplConfig[keyX] = newX;
+                        tplConfig[keyY] = newY;
+
+                        const inputX = document.getElementById(`cfg_${keyX}`);
+                        const inputY = document.getElementById(`cfg_${keyY}`);
+                        if (inputX) inputX.value = newX;
+                        if (inputY) inputY.value = newY;
+
+                        item.style.left = newX + '%';
+                        item.style.top = newY + '%';
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
             });
         }
 
-        // ==========================================
-        // 6. ระบบพิมพ์บัตร (Batch & Single Print)
-        // ==========================================
-        function prepareBatchPrint(singleId = null) {
-            currentPrintList = [];
-            if (singleId) {
-                const emp = db.employees.find(e => String(e.ID || e.id) === String(singleId));
-                if (emp) currentPrintList.push(emp);
-            } else {
-                const selectedIds = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
-                currentPrintList = db.employees.filter(e => selectedIds.includes(String(e.ID || e.id)));
-            }
+        function renderPreviewBoard(emp, targetContainerId) {
+            const container = document.getElementById(targetContainerId);
+            if(!container) return;
 
-            if (currentPrintList.length === 0) {
-                showToast('กรุณาเลือกรายการพนักงานที่ต้องการพิมพ์', 'error');
+            const formatThaiDate = (dStr) => {
+                if(!dStr) return '-';
+                const d = new Date(dStr);
+                if(isNaN(d.getTime())) return '-';
+                const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+                return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
+            };
+
+            let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
+            
+            const createTxt = (id, text, x, y, size, fw='300') => {
+                return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
+            };
+
+            const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
+
+            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
+            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
+            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
+
+            const academicVal = emp.AcademicStanding ? emp.AcademicStanding : (targetContainerId === 'editor-preview-board' ? '(นักบริหารงานท้องถิ่น)' : '');
+            if (academicVal) {
+                html += createTxt('academicStanding', academicVal, tplConfig.academicStandingX, tplConfig.academicStandingY, tplConfig.academicStandingSize, '300');
+            }
+            
+            const cardTypeVal = emp.CardType ? emp.CardType : (targetContainerId === 'editor-preview-board' ? 'บัตรประจำตัวเจ้าหน้าที่รัฐ' : '');
+            html += createTxt('cardType', cardTypeVal, tplConfig.cardTypeX, tplConfig.cardTypeY, tplConfig.cardTypeSize, '300');
+
+            const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
+            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '300');
+            
+            const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
+            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '300');
+
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '300');
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '300');
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '300');
+
+            const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
+            const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
+            const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
+
+            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '300');
+            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '300');
+            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '300');
+
+            container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
+
+            if (targetContainerId === 'editor-preview-board') {
+                attachDragAndDropToEditor();
+            }
+        }
+
+        function prepareBatchPrint() {
+            const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
+            if(checked.length === 0) {
+                showToast('กรุณาเลือกเจ้าหน้าที่อย่างน้อย 1 รายการ', 'error');
                 return;
             }
-
-            renderPrintCards();
-            nav('print-preview');
+            previewCard(checked);
         }
 
-        function renderPrintCards() {
-            const container = document.getElementById('print-preview-container');
-            const printSec = document.getElementById('print-section');
-            if (!container || !printSec) return;
+        function previewCard(empIds) {
+            if (!db.employees || db.employees.length === 0) {
+                showToast('ยังไม่มีข้อมูลในระบบ', 'error');
+                return;
+            }
+            
+            currentPrintList = [];
+            const printPreviewContainer = document.getElementById('print-preview-container');
+            printPreviewContainer.innerHTML = '';
 
-            container.innerHTML = '';
-            printSec.innerHTML = '';
+            empIds.forEach((id) => {
+                const emp = db.employees.find(x => String(x.ID) === String(id));
+                if(!emp) return;
 
-            currentPrintList.forEach(emp => {
-                const cardHtml = generateCardHTML(emp);
+                currentPrintList.push(emp);
                 
-                const previewWrapper = document.createElement('div');
-                previewWrapper.className = 'border rounded-xl p-2 bg-gray-100 shadow-md mb-4';
-                previewWrapper.innerHTML = cardHtml;
-                container.appendChild(previewWrapper);
-
-                const printWrapper = document.createElement('div');
-                printWrapper.className = 'print-card-wrapper';
-                printWrapper.innerHTML = cardHtml;
-                printSec.appendChild(printWrapper);
+                const cardDiv = document.createElement('div');
+                const uuid = 'prev_' + Math.random().toString(36).substring(7);
+                cardDiv.id = uuid;
+                cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
+                printPreviewContainer.appendChild(cardDiv);
+                
+                renderPreviewBoard(emp, uuid);
             });
-        }
 
-        function generateCardHTML(emp) {
-            const formatDateTh = (dateStr) => {
-                if (!dateStr) return '-';
-                const parts = dateStr.split('-');
-                if (parts.length !== 3) return dateStr;
-                const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-                const yBE = parseInt(parts[0], 10) + 543;
-                return `${parseInt(parts[2], 10)} ${months[parseInt(parts[1], 10) - 1]} ${yBE}`;
-            };
-
-            return `
-                <div class="card-preview-container" style="position:relative; width:100%; aspect-ratio:2048/828; overflow:hidden;">
-                    <img src="card_template.png" class="card-bg" style="position:absolute; width:100%; height:100%; top:0; left:0;" onerror="this.src='https://placehold.co/2048x828/fff/ccc?text=MISSING+card_template.png'">
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.citizenIdX}%; top:${tplConfig.citizenIdY}%; font-size:${tplConfig.citizenIdSize}rem;">${emp.CitizenID || emp.citizenId || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.nameX}%; top:${tplConfig.nameY}%; font-size:${tplConfig.nameSize}rem;">${emp.EmployeeName || emp.name || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.positionX}%; top:${tplConfig.positionY}%; font-size:${tplConfig.positionSize}rem;">${emp.PositionName || emp.positionName || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.academicStandingX}%; top:${tplConfig.academicStandingY}%; font-size:${tplConfig.academicStandingSize}rem;">${emp.AcademicStanding || emp.academicStanding || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.cardTypeX}%; top:${tplConfig.cardTypeY}%; font-size:${tplConfig.cardTypeSize}rem;">${emp.CardType || emp.cardType || 'บัตรประจำตัวเจ้าหน้าที่ของรัฐ'}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.positionTypeX}%; top:${tplConfig.positionTypeY}%; font-size:${tplConfig.positionTypeSize}rem;">${emp.PositionType || emp.positionType || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.bloodTypeX}%; top:${tplConfig.bloodTypeY}%; font-size:${tplConfig.bloodTypeSize}rem;">${emp.BloodType || emp.bloodType || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.cardNumX}%; top:${tplConfig.cardNumY}%; font-size:${tplConfig.cardNumSize}rem;">${emp.CardNumber || emp.cardNum || ''}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.issueDateX}%; top:${tplConfig.issueDateY}%; font-size:${tplConfig.dateSize}rem;">${formatDateTh(emp.IssueDate || emp.issueDate)}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.expireDateX}%; top:${tplConfig.expireDateY}%; font-size:${tplConfig.dateSize}rem;">${formatDateTh(emp.ExpireDate || emp.expireDate)}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.headNameX}%; top:${tplConfig.headNameY}%; font-size:${tplConfig.headNameSize}rem;">${agencySettings.head_name}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.headPositionX}%; top:${tplConfig.headPositionY}%; font-size:${tplConfig.headPositionSize}rem;">${agencySettings.head_position}</div>
-                    <div class="overlay-item font-semibold" style="left:${tplConfig.agencyProvinceX}%; top:${tplConfig.agencyProvinceY}%; font-size:${tplConfig.agencyProvinceSize}rem;">${agencySettings.agency_name} ${agencySettings.province}</div>
-                </div>
-            `;
+            if(currentPrintList.length > 0) {
+                nav('print-preview');
+            }
         }
 
         function executePrint() {
-            window.print();
+            if(currentPrintList.length === 0) return;
+
+            const printSection = document.getElementById('print-section');
+            printSection.innerHTML = '';
+
+            currentPrintList.forEach(emp => {
+                const cardDiv = document.createElement('div');
+                const uuid = 'print_' + Math.random().toString(36).substring(7);
+                cardDiv.id = uuid;
+                cardDiv.className = 'print-card-wrapper';
+                printSection.appendChild(cardDiv);
+                
+                renderPreviewBoard(emp, uuid);
+            });
+
+            setTimeout(() => {
+                window.print();
+                
+                if(confirm('การพิมพ์เสร็จสิ้นและสมบูรณ์หรือไม่? (กด OK เพื่อบันทึกประวัติการพิมพ์)')) {
+                    const printPayload = currentPrintList.map(e => ({ EmployeeID: e.ID, CardNumber: e.CardNumber, EmployeeName: e.EmployeeName }));
+                    fetchAPI('recordPrint', printPayload).then(() => {
+                        showToast('บันทึกประวัติการพิมพ์สำเร็จ', 'success');
+                        loadEmployees(); 
+                    });
+                }
+            }, 500);
         }
 
-        // ==========================================
-        // 7. ยูทิลิตี้และ UI Helpers
-        // ==========================================
         function initFormListeners() {
-            const posTypeSelect = document.getElementById('f_positionType');
-            const academicWrapper = document.getElementById('f_academic_standing_wrapper');
-            if (posTypeSelect && academicWrapper) {
-                posTypeSelect.addEventListener('change', function() {
-                    if (this.value.includes('บริหาร') || this.value.includes('ข้าราชการ')) {
-                        academicWrapper.classList.remove('hidden');
-                    } else {
-                        academicWrapper.classList.add('hidden');
-                    }
+            const positionInput = document.getElementById('f_positionName');
+            const citizenIdInput = document.getElementById('f_citizenId');
+
+            if (positionInput) {
+                positionInput.addEventListener('input', toggleExecutiveField);
+            }
+
+            if (citizenIdInput) {
+                citizenIdInput.addEventListener('input', function() {
+                    this.value = formatCitizenId(this.value);
                 });
             }
         }
 
-        function saveSystemSettings() {
-            const url = document.getElementById('set_gas_url').value.trim();
-            GAS_URL = url;
-            USE_LOCAL = (url === '');
-            showToast('บันทึกการตั้งค่าการเชื่อมต่อเรียบร้อย');
-            loadEmployees();
+        function toggleExecutiveField() {
+            const positionInput = document.getElementById('f_positionName');
+            const academicStandingWrapper = document.getElementById('f_academic_standing_wrapper');
+            const academicStandingInput = document.getElementById('f_academicStanding');
+
+            if (!positionInput || !academicStandingWrapper) return;
+
+            const executivePrefixes = ['หัวหน้าสำนัก', 'ผู้อำนวยการกอง', 'หัวหน้าฝ่าย', 'ปลัด', 'รองปลัด'];
+            const val = positionInput.value.trim();
+            const isExecutive = executivePrefixes.some(prefix => val.startsWith(prefix));
+
+            if (isExecutive) {
+                academicStandingWrapper.classList.remove('hidden');
+            } else {
+                academicStandingWrapper.classList.add('hidden');
+                if (academicStandingInput) academicStandingInput.value = '';
+            }
         }
 
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            if (!toast) return;
-            toast.innerText = message;
-            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded shadow-lg text-white transition-all duration-300 z-50 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+        function formatCitizenId(value) {
+            const cleanValue = value.replace(/\D/g, '');
+            const limitValue = cleanValue.substring(0, 13);
+            
+            let formattedValue = '';
+            if (limitValue.length > 0) formattedValue += limitValue.substring(0, 1);
+            if (limitValue.length > 1) formattedValue += ' ' + limitValue.substring(1, 5);
+            if (limitValue.length > 5) formattedValue += ' ' + limitValue.substring(5, 10);
+            if (limitValue.length > 10) formattedValue += ' ' + limitValue.substring(10, 12);
+            if (limitValue.length > 12) formattedValue += ' ' + limitValue.substring(12, 13);
+
+            return formattedValue;
         }
     </script>
 </body>
