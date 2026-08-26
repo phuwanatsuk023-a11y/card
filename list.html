@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</title>
+    
+    <!-- 🔒 ระบบตรวจสอบการเข้าสู่ระบบ (Authentication Guard) -->
+    <script>
+        (function() {
+            const currentUser = sessionStorage.getItem('currentUser');
+            if (!currentUser) {
+                alert('กรุณาเข้าสู่ระบบก่อนเข้าใช้งาน');
+                window.location.href = 'index.html';
+            }
+        })();
+    </script>
+
+    <!-- Fonts: Noto Sans Thai & TH Sarabun PSK / Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['"Noto Sans Thai"', 'sans-serif'],
+                        sarabun: ['"Sarabun"', 'sans-serif']
+                    },
+                    colors: {
+                        gov: { navy: '#1d4ed8', blue: '#2563eb', gold: '#eab308', light: '#f8fafc' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Icons (FontAwesome & Lucide Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Flatpickr (Thai Calendar Support) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
+    <style>
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            #sidebar, #topbar, .no-print { display: none !important; }
+            #app-container { margin: 0 !important; padding: 0 !important; width: 100% !important; display: block !important; }
+            #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
+            .print-card-wrapper {
+                width: 172mm !important; 
+                height: 69.5mm !important; 
+                page-break-inside: avoid;
+                margin-bottom: 10mm;
+                position: relative;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .print-card-wrapper img.card-bg {
+                width: 100%; height: 100%; object-fit: contain;
+            }
+        }
+
+        .card-preview-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px; 
+            aspect-ratio: 2048 / 828;
+            background-color: white;
+            
+            overflow: hidden;
+            
+            font-family: 'Sarabun', sans-serif !important;
+        }
+        .card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        
+        .overlay-item {
+            position: absolute;
+            z-index: 10;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        #editor-preview-board .overlay-item {
+            cursor: move;
+            user-select: none;
+            transition: outline 0.15s ease;
+        }
+
+        #editor-preview-board .overlay-item:hover {
+            outline: 1.5px dashed #2563eb;
+            background-color: rgba(37, 99, 235, 0.08);
+            border-radius: 2px;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex flex-col font-sans text-gray-800">
+
+    <!-- Header Bar -->
+    <header id="topbar" class="w-full px-6 py-4 shadow-md flex items-center justify-between bg-blue-600 text-white z-40 sticky top-0 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20 overflow-hidden">
+                <img id="header-logo" src="" alt="Logo" class="w-full h-full object-contain p-1 hidden">
+                <i id="header-logo-icon" data-lucide="building-2" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</h1>
+                <p class="text-xs text-blue-100 font-light" id="header-org-name">ระบบพิมพ์บัตรประจำตัวเจ้าหน้าที่รัฐ</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 sm:gap-5">
+            <div class="text-right hidden sm:block">
+                <div class="text-xs text-blue-100"><span class="font-bold text-white" id="header-user-name">กำลังโหลดข้อมูล...</span></div>
+                <div class="text-[10px] bg-blue-700 px-2.5 py-0.5 rounded-full mt-0.5 inline-block font-semibold uppercase tracking-wider border border-blue-400/30">
+                    Role: <span id="header-user-role">guest</span>
+                </div>
+            </div>
+            
+            <div class="text-right font-mono bg-blue-700/50 px-3 py-1 rounded-xl border border-blue-500/40 hidden md:block">
+                <div id="header-date" class="text-[11px] text-blue-100 font-sans"></div>
+                <div id="header-time" class="text-sm font-bold tracking-wider text-amber-300"></div>
+            </div>
+
+            <div class="relative group">
+                <button type="button" id="kebab-menu-btn" aria-label="เมนูเพิ่มเติม" class="p-2 hover:bg-blue-700/80 rounded-lg transition-colors duration-200 focus:outline-none flex items-center justify-center">
+                    <i data-lucide="more-vertical" class="w-5 h-5 text-white"></i>
+                </button>
+                <div id="kebab-dropdown" class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-50">
+                    <div class="bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 text-gray-800">
+                        <hr class="my-1 border-gray-100">
+                        <a href="#" onclick="sessionStorage.removeItem('currentUser'); window.location.href='index.html'; return false;" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors">
+                            <i data-lucide="log-out" class="w-4 h-4 text-red-600"></i>
+                            <span>ออกจากระบบ</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="app-container" class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-64 bg-white shadow-lg flex flex-col z-10 shrink-0">
+            <nav class="flex-1 py-4 flex flex-col gap-1">
+                <a href="#" onclick="nav('dashboard')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5"></i> <span>Dashboard</span>
+                </a>
+                <a href="#" onclick="nav('employees')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-users-rectangle w-5"></i> <span>ข้อมูลพนักงาน</span>
+                </a>
+                <a href="#" onclick="openAddForm()" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-user-plus w-5"></i> <span>เพิ่มข้อมูลใหม่</span>
+                </a>
+                <a href="#" onclick="nav('agency-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-building-circle-check w-5"></i> <span>เพิ่มหน่วยงาน</span>
+                </a>
+                <a href="#" onclick="nav('print-history')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i> <span>ประวัติการพิมพ์</span>
+                </a>
+                <div class="my-2 border-t border-gray-100"></div>
+                <p class="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ตั้งค่าระบบ</p>
+                <a href="#" onclick="nav('template-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors">
+                    <i class="fa-solid fa-id-card-clip w-5"></i> <span>ตั้งค่า Template บัตร</span>
+                </a>
+                
+                <a href="#" id="menu-account-settings" onclick="nav('account-settings')" class="menu-btn px-6 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-l-4 border-transparent flex items-center gap-3 transition-colors hidden">
+                    <i class="fa-solid fa-user-gear w-5"></i> <span>ตั้งค่าบัญชี</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-100 text-xs text-center text-gray-500 flex flex-col items-center gap-2">
+                <!--img src="profile_1_1786452882.png" alt="ผู้พัฒนาระบบ" class="w-12 h-12 rounded-full object-cover border-2 border-blue-500 shadow-sm transform transition-transform duration-300 hover:scale-150 relative z-20 cursor-pointer"-->
+                <div>
+                    <p class="text-xs text-gray-500">นายภูวนาท สุขประเสริฐ</p>
+                    <p class="text-xs text-gray-500">หัวหน้าฝ่ายบุคลากรทางการศึกษา</p>
+                    <p class="text-xs text-gray-500">ผู้พัฒนาระบบ</p>
+                </div>
+                <div class="mt-1 font-bold text-gray-400 text-[11px] tracking-wider uppercase">GovCard Pro v1.0</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="content" class="flex-1 bg-gray-50 overflow-y-auto p-6 relative">
+            
+            <!-- Dashboard Section -->
+            <section id="sec-dashboard" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900">ภาพรวมระบบ (Dashboard)</h2>
+                    <div class="flex gap-2">
+                        <button onclick="openAddForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm transition-colors">
+                            <i class="fa-solid fa-plus mr-1"></i> เพิ่มข้อมูล
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-blue-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">เจ้าหน้าที่ทั้งหมด</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-total">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-yellow-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">รอจัดทำ / พร้อมพิมพ์</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-pending">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-clock"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-green-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">พิมพ์แล้ว</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-printed">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-print"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-red-500">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">บัตรหมดอายุ</p>
+                                <h3 class="text-3xl font-bold text-gray-800 mt-1" id="stat-expired">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-id-card-clip"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employees Table Section -->
+            <section id="sec-employees" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900">ข้อมูลพนักงาน</h2>
+                    <div class="flex gap-2">
+                        <button onclick="openAddForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-plus"></i> เพิ่มใหม่</button>
+                        <button onclick="prepareBatchPrint()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-print"></i> พิมพ์รายการที่เลือก</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="p-4 border-b border-gray-200 flex gap-4 bg-gray-50 rounded-t-lg">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" id="search-input" onkeyup="renderEmployeeTable()" placeholder="ค้นหาชื่อ นามสกุล เลขประจำตัวประชาชน หรือเลขที่บัตร..." class="w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-sm border-b">
+                                    <th class="p-3 w-10 text-center"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                                    <th class="p-3">เลขประจำตัวประชาชน</th>
+                                    <th class="p-3">ชื่อ - นามสกุล</th>
+                                    <th class="p-3">ตำแหน่ง / สังกัด</th>
+                                    <th class="p-3">ประเภทพนักงาน</th>
+                                    <th class="p-3 text-center">สถานะ</th>
+                                    <th class="p-3 text-center w-48">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emp-table-body" class="text-sm">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: ฟอร์มเพิ่ม/แก้ไขข้อมูล -->
+            <section id="sec-form" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900" id="form-title">เพิ่มข้อมูลบุคลากรใหม่</h2>
+                    
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <form id="emp-form" onsubmit="saveEmployee(event)" class="space-y-6">
+                        <input type="hidden" id="f_id">
+                        
+                        <div class="border-b pb-6">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-blue-600 pl-2">ข้อมูลส่วนบุคคลและสังกัด</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div>
+                                    <label for="f_citizenId" class="block text-sm font-medium text-gray-700 mb-1">เลขประจำตัวประชาชน (13 หลัก) <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_citizenId" required maxlength="17" placeholder="x xxxx xxxxx xx x" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label for="f_employeeName" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_employeeName" required placeholder="นาย/นาง/นางสาว..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div>
+                                    <label for="f_schoolAffiliation" class="block text-sm font-medium text-gray-700 mb-1">ส่วนราชการ <span class="text-red-500">*</span></label>
+                                    <div class="flex gap-2">
+                                        <select id="f_schoolAffiliation" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                            <option value="">--- เลือกส่วนราชการ ---</option>
+                                        </select>
+                                        <button type="button" onclick="openMasterModal('affiliation')" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors" title="จัดการส่วนราชการ">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="f_positionName" class="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_positionName" required placeholder="เช่น นักทรัพยากรบุคคลปฏิบัติการ" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                </div>
+                            </div>
+
+                            <div id="f_academic_standing_wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 hidden">
+                                <div>
+                                    <label for="f_academicStanding" class="block text-sm font-medium text-gray-700 mb-1">ชื่อสายงานผู้บริหาร</label>
+                                    <input type="text" id="f_academicStanding" placeholder="(นักบริหารงาน......)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label for="f_positionType" class="block text-sm font-medium text-gray-700 mb-1">ประเภทพนักงาน <span class="text-red-500">*</span></label>
+                                    <div class="flex gap-2">
+                                        <select id="f_positionType" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                            <option value="">--- เลือกประเภทพนักงาน ---</option>
+                                        </select>
+                                        <button type="button" onclick="openMasterModal('positionType')" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors" title="จัดการประเภทพนักงาน">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="f_gender" class="block text-sm font-medium text-gray-700 mb-1">เพศ <span class="text-red-500">*</span></label>
+                                    <select id="f_gender" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                        <option value="">เลือกเพศ</option>
+                                        <option value="ชาย">ชาย</option>
+                                        <option value="หญิง">หญิง</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="f_bloodType" class="block text-sm font-medium text-gray-700 mb-1">หมู่โลหิต</label>
+                                    <select id="f_bloodType" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                        <option value="">เลือกหมู่โลหิต (ไม่บังคับ)</option>
+                                        <option value="เอ">เอ</option>
+                                        <option value="บี">บี</option>
+                                        <option value="เอบี">เอบี</option>
+                                        <option value="โอ">โอ</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4 border-l-4 border-green-500 pl-2">ข้อมูลเฉพาะของบัตร</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label for="f_cardType" class="block text-sm text-gray-600 mb-1">เลือกประเภทบัตร <span class="text-red-500">*</span></label>
+                                    <div class="flex gap-2">
+                                        <select id="f_cardType" required class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-600 focus:outline-none text-sm">
+                                            <option value="">--- เลือกประเภทบัตร ---</option>
+                                        </select>
+                                        <button type="button" onclick="openMasterModal('cardType')" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors" title="จัดการประเภทบัตร">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">เลขที่บัตร <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_cardNum" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">วันที่ออกบัตร <span class="text-red-500">*</span></label>
+                                    <input type="text" id="f_issueDate" required placeholder="เลือกวันที่ออกบัตร" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none bg-white cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">วันที่บัตรหมดอายุ <span class="text-xs text-gray-400"></span></label>
+                                    <input type="text" id="f_expireDate" required placeholder="คำนวณอัตโนมัติ" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+<label class="block text-sm text-red-600 mb-1">***กดปุ่ม + เพื่อเพิ่ม/แก้ไข/ลบ Dropdown (ส่วนราชการ,ประเภทพนักงาน, เลือกประเภทบัตร)<span class="text-xs text-gray-400"></span></label>
+                        <div class="pt-6 border-t flex justify-end gap-3">
+                            <button type="button" onclick="nav('employees')" class="px-6 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">ยกเลิก</button>
+                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md font-medium"><i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Section: ตั้งค่าหน่วยงาน -->
+            <section id="sec-agency-settings" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-building-user mr-2"></i>ตั้งค่าหน่วยงาน</h2>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-4xl">
+                    <form id="agency-form" onsubmit="event.preventDefault(); saveAgencySettings();">
+                        <div class="mb-6 pb-6 border-b">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">โลโก้หน่วยงาน</label>
+                            <div class="flex items-center gap-5">
+                                <div class="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden relative shrink-0">
+                                    <img id="agency_logo_preview" src="" class="w-full h-full object-contain p-1 hidden">
+                                    <div id="agency_logo_placeholder" class="text-center p-2 text-gray-400">
+                                        <i class="fa-solid fa-image text-2xl mb-1"></i>
+                                        <span class="text-xs block">ไม่มีโลโก้</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <input type="file" id="agency_logo_input" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" onchange="handleAgencyLogoUpload(event)">
+                                    <label for="agency_logo_input" class="cursor-pointer px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2">
+                                        <i class="fa-solid fa-upload text-gray-500"></i> เลือกไฟล์รูปโลโก้
+                                    </label>
+                                    <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WEBP (ขนาดไม่เกิน 2MB)</p>
+                                    <input type="hidden" id="f_agency_logo">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อนายก อปท. (ผู้บริหารสูงสุด) *</label>
+                                <input type="text" id="f_head_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none ">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">2. ตำแหน่ง *</label>
+                                <input type="text" id="f_head_position" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none ">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">3. ชื่อ อปท. (เช่น เทศบาลตำบล/อบต./เมืองพัทยา) *</label>
+                                <input type="text" id="f_agency_name" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none ">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">4. จังหวัด *</label>
+                                <input type="text" id="f_province" required class="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none border-gray-300">
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-4 border-t flex justify-end gap-3">
+                            <button type="button" onclick="resetAgencySettings()" class="px-4 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-100 text-sm font-medium">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> รีเซ็ตค่าเริ่มต้น
+                            </button>
+                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md text-sm font-medium">
+                                <i class="fa-solid fa-save mr-1"></i> บันทึกการตั้งค่า
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Section: ตั้งค่า Template -->
+            <section id="sec-template-settings" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900">ตั้งค่า Template & ตำแหน่งบัตร (%)</h2>
+                    <button onclick="saveTemplateSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm text-sm"><i class="fa-solid fa-save"></i> บันทึกตำแหน่ง</button>
+                </div>
+                
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <div class="w-full lg:w-1/3 bg-white p-4 rounded-lg shadow-sm border overflow-y-auto max-h-[70vh]">
+                        <p class="text-sm text-red-500 mb-4"><i class="fa-solid fa-hand-pointer mr-1 text-blue-800"></i> ***คลิกหรือลากข้อความในบัตรเพื่อปรับตำแหน่ง X, Y (%) ได้โดยตรง</p>
+                        <div class="space-y-4" id="config-panel"></div>
+                    </div>
+                    <div class="w-full lg:w-2/3">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border flex justify-center items-center bg-gray-100 overflow-x-auto">
+                            <div class="card-preview-container" id="editor-preview-board">
+                                <img src="card_template.png" class="card-bg" alt="Template" onerror="this.src='https://placehold.co/2048x828/fff/ccc?text=MISSING+card_template.png'">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: ตั้งค่าบัญชีผู้ใช้ (เฉพาะ Admin) -->
+            <section id="sec-account-settings" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-user-gear mr-2"></i>ตั้งค่าบัญชีผู้ใช้งาน (Google Sheet Users)</h2>
+                    <button onclick="loadUsersList()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+                        <i class="fa-solid fa-rotate mr-1"></i> โหลดข้อมูลใหม่
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-sm border-b">
+                                    <th class="p-3 text-center w-12">ID</th>
+                                    <th class="p-3">รูปภาพ</th>
+                                    <th class="p-3">ชื่อ - นามสกุล</th>
+                                    <th class="p-3">Username</th>
+                                    <th class="p-3">ตำแหน่ง / หน่วยงาน</th>
+                                    <th class="p-3 text-center">Role</th>
+                                    <th class="p-3 text-center w-36">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="text-sm">
+                                <tr>
+                                    <td colspan="7" class="text-center p-6 text-gray-500">กำลังโหลดข้อมูลผู้ใช้งาน...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section id="sec-print-preview" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6 no-print">
+                    <h2 class="text-2xl font-bold text-blue-900"><i class="fa-solid fa-print"></i> ตัวอย่างบัตรก่อนพิมพ์</h2>
+                    <div class="flex gap-2">
+                        <button onclick="nav('employees')" class="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50"><i class="fa-solid fa-arrow-left"></i> กลับ</button>
+                        <button onclick="executePrint()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow-md text-sm font-medium"><i class="fa-solid fa-print"></i> เริ่มพิมพ์ (Print / PDF)</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-lg shadow-inner flex flex-col items-center gap-6 overflow-y-auto no-print" id="print-preview-container">
+                </div>
+            </section>
+
+            <!-- System Settings -->
+            <section id="sec-system-settings" class="view-section hidden">
+                <div class="max-w-2xl bg-white p-6 rounded-lg shadow-sm border">
+                    <h2 class="text-xl font-bold text-blue-900 mb-4">ตั้งค่าฐานข้อมูล Google Apps Script (GAS)</h2>
+                    <p class="text-sm text-gray-600 mb-6">หากปล่อยว่างไว้ ระบบจะทำงานในโหมด "Local Storage" หากต้องการให้เชื่อมกับ Google Sheets ให้วาง Web App URL ลงที่นี่</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1">Web App URL (GAS End Point)</label>
+                        <input type="text" id="set_gas_url" placeholder="https://script.google.com/macros/s/AKfycbxumO_fFwaz3vNEt_VVxX9nEgy_OTx_7eQho3BQyuUrvzi94FFpEaE2IndeoEydfjUUXQ/exec" class="w-full border rounded px-3 py-2 font-mono text-sm">
+                    </div>
+                    <button onclick="saveSystemSettings()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><i class="fa-solid fa-save"></i> บันทึกการเชื่อมต่อ</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal จัดการตัวเลือก (ส่วนราชการ / ประเภทพนักงาน) -->
+    <div id="modal-master-data" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg" id="modal-master-title">จัดการข้อมูล</h3>
+                <button onclick="closeMasterModal()" class="text-blue-100 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex gap-2">
+                    <input type="hidden" id="master_edit_index" value="-1">
+                    <input type="text" id="master_input_val" placeholder="กรอกชื่อรายการใหม่..." class="flex-1 border rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-600 focus:outline-none">
+                    <button onclick="saveMasterItem()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 font-medium">
+                        <i class="fa-solid fa-plus mr-1"></i> บันทึก
+                    </button>
+                </div>
+                <div class="max-h-60 overflow-y-auto border rounded-lg divide-y">
+                    <ul id="master_items_list" class="divide-y text-sm">
+                    </ul>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end">
+                <button onclick="closeMasterModal()" class="px-4 py-2 border rounded-lg text-gray-600 text-sm hover:bg-gray-100">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal แก้ไขข้อมูลผู้ใช้งาน (Admin Edit User) -->
+    <div id="modal-edit-user" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-user-pen mr-2"></i>แก้ไขข้อมูลผู้ใช้งาน</h3>
+                <button onclick="closeUserEditModal()" class="text-blue-100 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="edit-user-form" onsubmit="saveUserEdit(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <input type="hidden" id="edit_u_id">
+
+                <!-- รูปโปรไฟล์ (คอลัมน์ L) - วางเมาส์เพื่อดูรูปขยายใหญ่ -->
+                <div class="flex justify-center">
+                    <div class="relative group inline-block">
+                        <img id="edit_u_photo_preview" src="icon person.png" alt="รูปโปรไฟล์"
+                             class="w-20 h-20 rounded-full object-cover border-2 border-gray-200 shadow cursor-pointer"
+                             onerror="this.src='icon person.png'">
+                        <img id="edit_u_photo_zoom" src="icon person.png" alt="รูปโปรไฟล์ขยาย"
+                             class="hidden group-hover:block fixed z-[100] w-64 h-64 md:w-80 md:h-80 rounded-xl object-cover border-4 border-white shadow-2xl pointer-events-none"
+                             style="top:50%; left:50%; transform:translate(-50%,-50%);"
+                             onerror="this.src='icon person.png'">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">ชื่อ</label>
+                        <input type="text" id="edit_u_firstname" required class="w-full border rounded p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">นามสกุล</label>
+                        <input type="text" id="edit_u_lastname" required class="w-full border rounded p-2 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
+                        <input type="text" id="edit_u_username" readonly class="w-full border rounded p-2 text-sm bg-gray-100 text-gray-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Role</label>
+                        <select id="edit_u_role" class="w-full border rounded p-2 text-sm">
+                            <option value="user">user</option>
+                            <option value="admin">admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">ตำแหน่ง</label>
+                        <input type="text" id="edit_u_position" class="w-full border rounded p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">หน่วยงาน</label>
+                        <input type="text" id="edit_u_organization" class="w-full border rounded p-2 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+                        <input type="text" id="edit_u_phone" placeholder="0812345678" class="w-full border rounded p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">LINE ID</label>
+                        <input type="text" id="edit_u_lineid" placeholder="line_id" class="w-full border rounded p-2 text-sm">
+                    </div>
+                </div>
+                <div class="pt-4 border-t flex justify-end gap-2">
+                    <button type="button" onclick="closeUserEditModal()" class="px-4 py-2 border rounded text-sm">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"><i class="fa-solid fa-save mr-1"></i> บันทึกการแก้ไข</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal แจ้งเตือนให้ตั้งค่าหน่วยงาน (แสดงเมื่อยังใช้ค่าเริ่มต้น "เทศบาลตำบลตัวอย่าง") -->
+    <div id="modal-setup-warning" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-triangle-exclamation mr-2"></i>แจ้งเตือน</h3>
+                <button onclick="closeSetupWarningModal()" class="text-blue-100 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 text-sm">กรุณาเพิ่มหน่วยงาน และตั้งค่า Template บัตร</p>
+            </div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                <button onclick="closeSetupWarningModal()" class="px-4 py-2 border rounded-lg text-gray-600 text-sm hover:bg-gray-100">ปิดหน้าต่าง</button>
+                <button onclick="closeSetupWarningModal(); nav('agency-settings');" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium">
+                    <i class="fa-solid fa-gear mr-1"></i> ไปตั้งค่าหน่วยงาน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-section" class="hidden"></div>
+
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        Message
+    </div>
+
+    <script>
+        let GAS_URL = 'https://script.google.com/macros/s/AKfycbxumO_fFwaz3vNEt_VVxX9nEgy_OTx_7eQho3BQyuUrvzi94FFpEaE2IndeoEydfjUUXQ/exec';
+        let USE_LOCAL = GAS_URL === '';
+        
+        let masterAffiliations = JSON.parse(localStorage.getItem('gov_master_affiliations')) || [
+             
+        ];
+        let masterPositionTypes = JSON.parse(localStorage.getItem('gov_master_position_types')) || [
+            
+        ];
+        let masterCardTypes = JSON.parse(localStorage.getItem('gov_master_card_types')) || [
+            'บัตรประจำตัวเจ้าหน้าที่ของรัฐ'
+        ];
+        let currentMasterType = ''; 
+
+        let db = { employees: [] }; 
+        if(USE_LOCAL && !localStorage.getItem('gov_db')) {
+            localStorage.setItem('gov_db', JSON.stringify([{
+                ID: '1', CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายสมชาย ใจดี', SchoolAffiliation: 'สำนักเทคโนโลยีสารสนเทศ', PositionName: 'นักวิชาการคอมพิวเตอร์ชำนาญการ', AcademicStanding: '', PositionType: 'พนักงานเทศบาล', Gender: 'ชาย', BloodType: 'โอ', CardNumber: 'C001/2569', IssueDate: '2026-08-22', ExpireDate: '2032-08-21', Status: 'พร้อมพิมพ์'
+            }]));
+        }
+
+        let agencySettings = JSON.parse(localStorage.getItem('gov_agency_settings')) || { 
+            head_name: 'นายตัวอย่าง รักชาติ', 
+            head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
+            agency_name: 'เทศบาลตำบลตัวอย่าง', 
+            province: 'จังหวัดตัวอย่าง', 
+            agency_logo: '' 
+        };
+
+        let tplConfig = {
+            citizenIdX: 22.4, citizenIdY: 22.3, citizenIdSize: 2,
+            nameX: 17.5, nameY: 30.7, nameSize: 2,
+            positionX: 21.1, positionY: 39.2, positionSize: 1.9,
+            academicStandingX: 22.4, academicStandingY: 48, academicStandingSize: 1.5,
+            bloodTypeX: 9.3, bloodTypeY: 75.3, bloodTypeSize: 1.8,
+            cardNumX: 74.6, cardNumY: 57.4, cardNumSize: 1.7,
+            issueDateX: 63.1, issueDateY: 75.3, expireDateX: 85.3, expireDateY: 75.3, dateSize: 1.8,
+            headNameX: 26, headNameY: 67.9, headNameSize: 1.7,
+            headPositionX: 24.4, headPositionY: 73.7, headPositionSize: 1.4,
+            agencyProvinceX: 60.8, agencyProvinceY: 64.8, agencyProvinceSize: 1.8,
+            cardTypeX: 64.7, cardTypeY: 18.8, cardTypeSize: 2.4,
+            positionTypeX: 70.6, positionTypeY: 49.2, positionTypeSize: 1.9
+        };
+
+        if(localStorage.getItem('gov_tpl_config')) {
+            const savedConfig = JSON.parse(localStorage.getItem('gov_tpl_config'));
+            tplConfig = { ...tplConfig, ...savedConfig };
+        }
+
+        let currentPrintList = [];
+        let issuePicker = null, expirePicker = null;
+
+        window.onload = () => {
+            document.getElementById('set_gas_url').value = GAS_URL;
+            loadCurrentUserInfo();
+            loadEmployees();
+            loadAgencySettings();
+            populateMasterDropdowns();
+            nav('dashboard');
+            buildTemplateConfigUI();
+            initFormListeners();
+            initFlatpickr();
+            initHeaderClock();
+            initHeaderEvents();
+        };
+
+        function initHeaderClock() {
+            const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+            const dateEl = document.getElementById('header-date');
+            const timeEl = document.getElementById('header-time');
+
+            function updateHeaderDateTime() {
+                if (!dateEl || !timeEl) return;
+                const now = new Date();
+                const thaiYear = now.getFullYear() + 543;
+                
+                dateEl.textContent = `${now.getDate()} ${thaiMonths[now.getMonth()]} ${thaiYear}`;
+                timeEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            }
+
+            updateHeaderDateTime();
+            setInterval(updateHeaderDateTime, 1000);
+        }
+
+        function initHeaderEvents() {
+            const kebabBtn = document.getElementById('kebab-menu-btn');
+            const kebabDropdown = document.getElementById('kebab-dropdown');
+            
+            if (kebabBtn && kebabDropdown) {
+                kebabBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    kebabDropdown.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!kebabDropdown.contains(e.target) && !kebabBtn.contains(e.target)) {
+                        kebabDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        }
+
+        function loadCurrentUserInfo() {
+            const rawUser = sessionStorage.getItem('currentUser');
+            let user = { name: 'ผู้ใช้งานระบบ', role: 'เจ้าหน้าที่', avatar: 'icon person.png' };
+            let userKey = '';
+
+            if (rawUser) {
+                try {
+                    const parsed = JSON.parse(rawUser);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        user = { ...user, ...parsed };
+                        userKey = parsed.username || parsed.email || parsed.name || rawUser;
+                    } else {
+                        user.name = rawUser;
+                        userKey = rawUser;
+                    }
+                } catch(e) {
+                    user.name = rawUser;
+                    userKey = rawUser;
+                }
+            }
+
+            renderHeaderUser(user);
+
+            if (user.role && String(user.role).toLowerCase() === 'admin') {
+                const adminMenu = document.getElementById('menu-account-settings');
+                if (adminMenu) adminMenu.classList.remove('hidden');
+            }
+
+            if (!USE_LOCAL && GAS_URL) {
+                fetchAPI('getUserInfo', { userKey: userKey }).then(res => {
+                    if (res && res.status === 'success' && res.data) {
+                        const sheetUser = {
+                            name: res.data.name || (res.data.firstname ? `${res.data.firstname} ${res.data.lastname}` : user.name),
+                            role: res.data.role || user.role,
+                            avatar: res.data.profile_image || res.data.avatar || user.avatar
+                        };
+                        renderHeaderUser(sheetUser);
+
+                        if (sheetUser.role && String(sheetUser.role).toLowerCase() === 'admin') {
+                            const adminMenu = document.getElementById('menu-account-settings');
+                            if (adminMenu) adminMenu.classList.remove('hidden');
+                        }
+                    }
+                }).catch(err => {
+                    console.warn('ไม่สามารถดึงข้อมูลโปรไฟล์จาก Google Sheet ได้ ใช้ข้อมูลจาก Session:', err);
+                });
+            }
+        }
+
+        function renderHeaderUser(user) {
+            if (document.getElementById('header-user-name')) {
+                document.getElementById('header-user-name').innerText = user.name || 'ผู้ใช้งานระบบ';
+            }
+            if (document.getElementById('header-user-role')) {
+                document.getElementById('header-user-role').innerText = user.role || 'เจ้าหน้าที่';
+            }
+            if (document.getElementById('header-user-avatar') && user.avatar) {
+                document.getElementById('header-user-avatar').src = user.avatar;
+            }
+        }
+
+        function populateMasterDropdowns() {
+            const affSelect = document.getElementById('f_schoolAffiliation');
+            if (affSelect) {
+                const curVal = affSelect.value;
+                affSelect.innerHTML = '<option value="">--- เลือกส่วนราชการ ---</option>';
+                masterAffiliations.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    affSelect.appendChild(opt);
+                });
+                if (curVal) affSelect.value = curVal;
+            }
+
+            const posSelect = document.getElementById('f_positionType');
+            if (posSelect) {
+                const curVal = posSelect.value;
+                posSelect.innerHTML = '<option value="">--- เลือกประเภทพนักงาน ---</option>';
+                masterPositionTypes.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    posSelect.appendChild(opt);
+                });
+                if (curVal) posSelect.value = curVal;
+            }
+
+            const cardTypeSelect = document.getElementById('f_cardType');
+            if (cardTypeSelect) {
+                const curVal = cardTypeSelect.value;
+                cardTypeSelect.innerHTML = '<option value="">--- เลือกประเภทบัตร ---</option>';
+                masterCardTypes.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    cardTypeSelect.appendChild(opt);
+                });
+                const DEFAULT_CARD_TYPE = 'บัตรประจำตัวเจ้าหน้าที่ของรัฐ';
+                if (curVal) {
+                    cardTypeSelect.value = curVal;
+                } else if (masterCardTypes.includes(DEFAULT_CARD_TYPE)) {
+                    cardTypeSelect.value = DEFAULT_CARD_TYPE; // ค่าเริ่มต้นสำหรับข้อมูลใหม่
+                }
+            }
+        }
+
+        function getMasterListConfig(type) {
+            if (type === 'affiliation') {
+                return { arr: masterAffiliations, storageKey: 'gov_master_affiliations', title: 'จัดการตัวเลือกส่วนราชการ' };
+            }
+            if (type === 'cardType') {
+                return { arr: masterCardTypes, storageKey: 'gov_master_card_types', title: 'จัดการตัวเลือกประเภทบัตร' };
+            }
+            return { arr: masterPositionTypes, storageKey: 'gov_master_position_types', title: 'จัดการตัวเลือกประเภทพนักงาน' };
+        }
+
+        function openMasterModal(type) {
+            currentMasterType = type;
+            document.getElementById('modal-master-title').innerText = getMasterListConfig(type).title;
+            document.getElementById('master_input_val').value = '';
+            document.getElementById('master_edit_index').value = '-1';
+            renderMasterList();
+            document.getElementById('modal-master-data').classList.remove('hidden');
+        }
+
+        function closeMasterModal() {
+            document.getElementById('modal-master-data').classList.add('hidden');
+            populateMasterDropdowns();
+        }
+
+        function renderMasterList() {
+            const listContainer = document.getElementById('master_items_list');
+            listContainer.innerHTML = '';
+            const items = getMasterListConfig(currentMasterType).arr;
+
+            items.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 flex justify-between items-center hover:bg-gray-50';
+                li.innerHTML = `
+                    <span class="font-medium text-gray-700">${item}</span>
+                    <div class="flex gap-2">
+                        <button onclick="editMasterItem(${index})" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1"><i class="fa-solid fa-pen"></i> แก้ไข</button>
+                        <button onclick="deleteMasterItem(${index})" class="text-red-500 hover:text-red-700 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i> ลบ</button>
+                    </div>
+                `;
+                listContainer.appendChild(li);
+            });
+        }
+
+        function saveMasterItem() {
+            const valInput = document.getElementById('master_input_val');
+            const editIdx = parseInt(document.getElementById('master_edit_index').value);
+            const val = valInput.value.trim();
+
+            if (!val) {
+                showToast('กรุณากรอกข้อความ', 'error');
+                return;
+            }
+
+            const cfg = getMasterListConfig(currentMasterType);
+            let targetArr = cfg.arr;
+
+            if (editIdx >= 0) {
+                targetArr[editIdx] = val;
+            } else {
+                if (!targetArr.includes(val)) targetArr.push(val);
+            }
+
+            if (currentMasterType === 'affiliation') {
+                masterAffiliations = targetArr;
+            } else if (currentMasterType === 'cardType') {
+                masterCardTypes = targetArr;
+            } else {
+                masterPositionTypes = targetArr;
+            }
+            localStorage.setItem(cfg.storageKey, JSON.stringify(targetArr));
+
+            valInput.value = '';
+            document.getElementById('master_edit_index').value = '-1';
+            renderMasterList();
+            showToast('บันทึกตัวเลือกเรียบร้อย');
+        }
+
+        function editMasterItem(index) {
+            const items = getMasterListConfig(currentMasterType).arr;
+            document.getElementById('master_input_val').value = items[index];
+            document.getElementById('master_edit_index').value = index;
+        }
+
+        function deleteMasterItem(index) {
+            if (!confirm('ยืนยันการลบตัวเลือกนี้?')) return;
+            const cfg = getMasterListConfig(currentMasterType);
+            cfg.arr.splice(index, 1);
+            localStorage.setItem(cfg.storageKey, JSON.stringify(cfg.arr));
+            renderMasterList();
+            showToast('ลบรายการเรียบร้อย');
+        }
+
+        // ==========================================================
+        // 📸 ดึงรูปโปรไฟล์ (คอลัมน์ L) เบอร์โทรศัพท์ (คอลัมน์ F) และ LINE ID (คอลัมน์ H)
+        // ของผู้ใช้งาน จาก Google Sheet โดยตรง
+        // Spreadsheet ID: 1t5nri1GEB2TMJLcTOuOsb4P3maiIcDRA98j3Y9fAQAU
+        // จับคู่แต่ละแถวกับผู้ใช้งานด้วยคอลัมน์ Username
+        // ⚠️ Google Sheet นี้ต้องแชร์เป็น "ทุกคนที่มีลิงก์ - ดูได้" (Anyone with the link - Viewer)
+        //    ไม่เช่นนั้น Browser จะดึงข้อมูลไม่ได้ (ติดหน้า Login ของ Google)
+        // ==========================================================
+        const USER_PHOTO_SHEET_ID = '1t5nri1GEB2TMJLcTOuOsb4P3maiIcDRA98j3Y9fAQAU';
+        const USER_PHOTO_COLUMN_INDEX = 11; // คอลัมน์ L (A=0, B=1, ... L=11)
+        const USER_PHONE_COLUMN_INDEX = 5;  // คอลัมน์ F
+        const USER_LINEID_COLUMN_INDEX = 7; // คอลัมน์ H
+        let userPhotoMap = {};  // { username (ตัวพิมพ์เล็ก) : ค่าที่อ่านได้จากคอลัมน์ L }
+        let userPhoneMap = {};  // { username (ตัวพิมพ์เล็ก) : ค่าที่อ่านได้จากคอลัมน์ F }
+        let userLineIdMap = {}; // { username (ตัวพิมพ์เล็ก) : ค่าที่อ่านได้จากคอลัมน์ H }
+
+        async function fetchUserPhotosFromSheet() {
+            userPhotoMap = {};
+            userPhoneMap = {};
+            userLineIdMap = {};
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${USER_PHOTO_SHEET_ID}/gviz/tq?tqx=out:json`;
+                const res = await fetch(url);
+                const raw = await res.text();
+                // ผลลัพธ์จะถูกห่อด้วย google.visualization.Query.setResponse({...}); ต้องตัดส่วนห่อออกก่อน
+                const jsonText = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+                const sheetData = JSON.parse(jsonText);
+
+                const cols = (sheetData.table && sheetData.table.cols) || [];
+                // หา index คอลัมน์ Username จากหัวตาราง (กันกรณีลำดับคอลัมน์ในชีตสลับไปจากที่คาดไว้)
+                let usernameColIndex = cols.findIndex(c => (c.label || '').toString().trim().toLowerCase() === 'username');
+                if (usernameColIndex === -1) {
+                    usernameColIndex = 3; // สำรอง: อ้างอิงลำดับฟิลด์เดิม id, firstname, lastname, username...
+                }
+
+                const rows = (sheetData.table && sheetData.table.rows) || [];
+                rows.forEach(row => {
+                    const cells = row.c || [];
+                    const usernameCell = cells[usernameColIndex];
+                    const imageCell = cells[USER_PHOTO_COLUMN_INDEX];
+                    const phoneCell = cells[USER_PHONE_COLUMN_INDEX];
+                    const lineIdCell = cells[USER_LINEID_COLUMN_INDEX];
+                    const usernameVal = usernameCell && usernameCell.v ? String(usernameCell.v).trim().toLowerCase() : '';
+                    const imageVal = imageCell && imageCell.v ? String(imageCell.v).trim() : '';
+                    const phoneVal = phoneCell && phoneCell.v ? String(phoneCell.v).trim() : '';
+                    const lineIdVal = lineIdCell && lineIdCell.v ? String(lineIdCell.v).trim() : '';
+                    if (usernameVal && imageVal) {
+                        userPhotoMap[usernameVal] = imageVal;
+                    }
+                    if (usernameVal && phoneVal) {
+                        userPhoneMap[usernameVal] = phoneVal;
+                    }
+                    if (usernameVal && lineIdVal) {
+                        userLineIdMap[usernameVal] = lineIdVal;
+                    }
+                });
+            } catch (err) {
+                console.error('ไม่สามารถดึงข้อมูลรูปภาพ/เบอร์โทร/LINE ID จาก Google Sheet ได้:', err);
+            }
+        }
+
+        // แปลงลิงก์ Google Drive (กรณีอัปโหลดผ่าน Google Form) ให้เป็นลิงก์รูปภาพที่แสดงผลใน <img> ได้โดยตรง
+        function resolveUserPhotoUrl(rawValue) {
+            if (!rawValue) return '';
+            if (rawValue.includes('drive.google.com')) {
+                const driveMatch = rawValue.match(/[-\w]{25,}/); // ดึง File ID จากลิงก์ Google Drive ทุกรูปแบบ
+                if (driveMatch) {
+                    return `https://lh3.googleusercontent.com/d/${driveMatch[0]}`;
+                }
+            }
+            return rawValue;
+        }
+
+        function loadUsersList() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังดึงข้อมูลจาก Google Sheet...</td></tr>';
+
+            Promise.all([
+                fetchAPI('getUsers'),
+                fetchUserPhotosFromSheet()
+            ]).then(([res]) => {
+                if (res && res.status === 'success' && res.data) {
+                    renderUsersTable(res.data);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">ไม่สามารถโหลดข้อมูลผู้ใช้งานได้ หรือ ไม่พบข้อมูล</td></tr>';
+                }
+            }).catch(err => {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-red-500">เกิดข้อผิดพลาดในการเชื่อมต่อ Google Sheet</td></tr>';
+            });
+        }
+
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500">ไม่พบรายการผู้ใช้งาน</td></tr>';
+                return;
+            }
+
+            // ⚙️ ตั้งค่า URL ของ Vercel App (กรณีที่คอลัมน์ L เก็บแค่ชื่อไฟล์ ไม่ใช่ Full URL)
+            const vercelBaseUrl = ''; // ตัวอย่าง: 'https://your-project.vercel.app/uploads/'
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                
+                // 1. ดึงรูปภาพ / เบอร์โทรศัพท์ / LINE ID ของผู้ใช้งานจาก Google Sheet (จับคู่ด้วย Username)
+                const userKeyLower = (u.username || '').toString().trim().toLowerCase();
+                let userImage = userPhotoMap[userKeyLower] || '';
+                userImage = resolveUserPhotoUrl(userImage);
+                const userPhone = userPhoneMap[userKeyLower] || '';
+                const userLineId = userLineIdMap[userKeyLower] || '';
+                
+                // 2. ตรวจสอบและสร้าง URL ของรูปภาพ
+                let avatarUrl = 'icon person.png'; // รูป Default เริ่มต้น
+                
+                if (userImage) {
+                    if (userImage.startsWith('http')) {
+                        // กรณีที่ข้อมูลในคอลัมน์ L เป็น Full URL (Google Drive / Vercel / อื่นๆ) อยู่แล้ว
+                        avatarUrl = userImage;
+                    } else {
+                        // กรณีที่ข้อมูลในคอลัมน์ L เป็นแค่ชื่อไฟล์ ให้เอาไปต่อกับ vercelBaseUrl
+                        avatarUrl = vercelBaseUrl ? (vercelBaseUrl + userImage) : userImage;
+                    }
+                }
+
+                // 3. กำหนดสีของ Badge ตาม Role
+                const roleBadge = u.role === 'admin' ? 'bg-purple-100 text-purple-700 font-semibold' : 'bg-gray-100 text-gray-600';
+
+                // 4. สร้าง HTML สำหรับแต่ละแถว
+                tr.innerHTML = `
+                    <td class="p-3 text-center font-mono text-xs">${u.id || '-'}</td>
+                    <td class="p-3">
+                        <img src="${avatarUrl}" class="w-9 h-9 rounded-full object-cover border shadow-sm" onerror="this.src='icon person.png'" alt="Profile">
+                    </td>
+                    <td class="p-3 font-semibold">${u.firstname || ''} ${u.lastname || ''}</td>
+                    <td class="p-3 font-mono text-xs text-blue-600">${u.username || '-'}</td>
+                    <td class="p-3 text-xs">${u.position || '-'}<br><span class="text-gray-400">${u.organization || '-'}</span></td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${roleBadge}">${u.role || 'user'}</span></td>
+                    <td class="p-3 text-center">
+                        <button onclick="openUserEditModal('${u.id}', '${u.firstname}', '${u.lastname}', '${u.username}', '${u.role}', '${u.position}', '${u.organization}', '${avatarUrl}', '${userPhone}', '${userLineId}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteUser('${u.id}', '${u.username}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบ"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openUserEditModal(id, fname, lname, uname, role, pos, org, photoUrl, phone, lineId) {
+            document.getElementById('edit_u_id').value = id;
+            document.getElementById('edit_u_firstname').value = fname || '';
+            document.getElementById('edit_u_lastname').value = lname || '';
+            document.getElementById('edit_u_username').value = uname || '';
+            document.getElementById('edit_u_role').value = role || 'user';
+            document.getElementById('edit_u_position').value = pos || '';
+            document.getElementById('edit_u_organization').value = org || '';
+            document.getElementById('edit_u_phone').value = (phone && phone !== 'undefined') ? phone : '';
+            document.getElementById('edit_u_lineid').value = (lineId && lineId !== 'undefined') ? lineId : '';
+
+            const photoSrc = (photoUrl && photoUrl !== 'undefined') ? photoUrl : 'icon person.png';
+            document.getElementById('edit_u_photo_preview').src = photoSrc;
+            document.getElementById('edit_u_photo_zoom').src = photoSrc;
+
+            document.getElementById('modal-edit-user').classList.remove('hidden');
+        }
+
+        function closeUserEditModal() {
+            document.getElementById('modal-edit-user').classList.add('hidden');
+        }
+
+        function saveUserEdit(e) {
+            e.preventDefault();
+            const payload = {
+                id: document.getElementById('edit_u_id').value,
+                firstname: document.getElementById('edit_u_firstname').value,
+                lastname: document.getElementById('edit_u_lastname').value,
+                role: document.getElementById('edit_u_role').value,
+                position: document.getElementById('edit_u_position').value,
+                organization: document.getElementById('edit_u_organization').value,
+                phone: document.getElementById('edit_u_phone').value,
+                lineid: document.getElementById('edit_u_lineid').value
+            };
+
+            fetchAPI('updateUser', payload).then(res => {
+                showToast('บันทึกการแก้ไขผู้ใช้สำเร็จ');
+                closeUserEditModal();
+                loadUsersList();
+            }).catch(err => showToast('ไม่สามารถอัปเดตข้อมูลได้', 'error'));
+        }
+
+        function deleteUser(id, username) {
+            if (!confirm(`ยืนยันการลบบัญชีผู้ใช้ ${username} ใช่หรือไม่?`)) return;
+
+            fetchAPI('deleteUser', { id: id, username: username }).then(res => {
+                showToast('ลบบัญชีผู้ใช้เรียบร้อย');
+                loadUsersList();
+            }).catch(err => showToast('ไม่สามารถลบข้อมูลได้', 'error'));
+        }
+
+        function initFlatpickr() {
+            if (typeof flatpickr === 'undefined') return;
+
+            flatpickr.localize(flatpickr.l10ns.th);
+
+            issuePicker = flatpickr('#f_issueDate', {
+                locale: 'th',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'j F Y',
+                onReady: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    createYearDropdown(instance);
+                },
+                onValueUpdate: function(selectedDates, dateStr, instance) { formatBuddhistYear(instance); },
+                onMonthChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    updateYearDropdown(instance);
+                },
+                onYearChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    updateYearDropdown(instance);
+                },
+                onOpen: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    updateYearDropdown(instance);
+                },
+                onChange: function(selectedDates, dateStr, instance) {
+                    formatBuddhistYear(instance);
+                    if (selectedDates[0]) {
+                        calculateAndSetExpireDate(selectedDates[0]);
+                    }
+                }
+            });
+
+            expirePicker = flatpickr('#f_expireDate', {
+                locale: 'th',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'j F Y',
+                clickOpens: false,
+                onReady: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onValueUpdate: (selectedDates, dateStr, instance) => formatBuddhistYear(instance),
+                onChange: (selectedDates, dateStr, instance) => formatBuddhistYear(instance)
+            });
+        }
+
+        function createYearDropdown(instance) {
+            if (!instance || !instance.calendarContainer) return;
+            const yearElement = instance.currentYearElement;
+            if (!yearElement || yearElement.tagName === 'SELECT') return;
+
+            const select = document.createElement('select');
+            select.className = 'flatpickr-monthDropdown-months';
+            select.style.cssText = 'font-size: 14px; font-weight: bold; padding: 2px 6px; border-radius: 4px; border: 1px solid #cbd5e1; margin-left: 6px; cursor: pointer; background: white; color: #1e293b;';
+
+            const currentAD = instance.currentYear;
+            const startYearAD = currentAD - 60;
+            const endYearAD = currentAD + 30;
+
+            for (let y = endYearAD; y >= startYearAD; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = ` ${y + 543}`;
+                if (y === currentAD) opt.selected = true;
+                select.appendChild(opt);
+            }
+
+            select.addEventListener('change', function() {
+                instance.changeYear(parseInt(this.value, 10));
+                formatBuddhistYear(instance);
+            });
+
+            if (yearElement.parentNode) {
+                yearElement.parentNode.replaceChild(select, yearElement);
+                instance.customYearSelect = select;
+            }
+        }
+
+        function updateYearDropdown(instance) {
+            if (instance && instance.customYearSelect) {
+                instance.customYearSelect.value = instance.currentYear;
+            }
+        }
+
+        function calculateAndSetExpireDate(issueDateObj) {
+            if (!issueDateObj || isNaN(issueDateObj.getTime())) return;
+
+            // คัดลอก Object วันที่เพื่อป้องกัน Side Effect
+            const expDate = new Date(issueDateObj.getTime());
+            
+            // บวก 6 ปี และลบ 1 วัน ตามเกณฑ์บัตรประจำตัว
+            expDate.setFullYear(expDate.getFullYear() + 6);
+            expDate.setDate(expDate.getDate() - 1);
+
+            // ดึงค่าตาม Local Timezone โดยตรง ป้องกันปัญหา UTC Offset จาก toISOString()
+            const year = expDate.getFullYear();
+            const month = String(expDate.getMonth() + 1).padStart(2, '0');
+            const day = String(expDate.getDate()).padStart(2, '0');
+            const expStr = `${year}-${month}-${day}`;
+
+            if (expirePicker) {
+                expirePicker.setDate(expStr, false); // ส่ง false เพื่อไม่ให้เกิด Event Loop ซ้ำซ้อน
+                formatBuddhistYear(expirePicker); // แปลงปี ค.ศ. เป็น พ.ศ. ใน altInput
+            }
+            document.getElementById('f_expireDate').value = expStr;
+        }
+
+        function formatBuddhistYear(instance) {
+            if (!instance || !instance.altInput) return;
+            if (instance.selectedDates.length > 0) {
+                const date = instance.selectedDates[0];
+                const day = date.getDate();
+                const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                const month = monthNames[date.getMonth()];
+                const yearBE = date.getFullYear() + 543;
+                instance.altInput.value = `${day} ${month} ${yearBE}`;
+            }
+        }
+
+        function nav(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.menu-btn').forEach(el => {
+                el.classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-600');
+                el.classList.add('text-gray-600', 'border-transparent');
+            });
+
+            document.getElementById(`sec-${viewId}`).classList.remove('hidden');
+
+            if (viewId === 'dashboard') updateDashboard();
+            if (viewId === 'employees') renderEmployeeTable();
+            if (viewId === 'template-settings') renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
+            if (viewId === 'account-settings') loadUsersList();
+        }
+
+        function openAddForm() {
+            document.getElementById('f_id').value = '';
+            document.getElementById('emp-form').reset();
+            populateMasterDropdowns();
+            document.getElementById('f_academic_standing_wrapper').classList.add('hidden');
+            document.getElementById('form-title').innerText = 'เพิ่มข้อมูลบุคลากรใหม่';
+
+            const today = new Date();
+            const issueStr = today.toISOString().split('T')[0];
+
+            if (issuePicker) issuePicker.setDate(issueStr, true);
+            calculateAndSetExpireDate(today);
+
+            nav('form');
+        }
+
+        function showToast(msg, type='info') {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `fixed bottom-4 right-4 px-6 py-3 rounded shadow-lg transform transition-all duration-300 z-50 ${type==='error'?'bg-red-600':'bg-gray-800'} text-white`;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function fetchAPI(action, payload = null) {
+            const localActions = ['getEmployees', 'saveEmployee', 'deleteEmployee', 'recordPrint', 'getAgencySettings', 'saveAgencySettings'];
+            
+            if (localActions.includes(action)) {
+                return handleLocalStorageData(action, payload);
+            } 
+
+            return handleGoogleSheetUsers(action, payload);
+        }
+
+        function handleLocalStorageData(action, payload) {
+            return new Promise((resolve) => {
+                let localData = JSON.parse(localStorage.getItem('gov_db')) || [];
+
+                if (action === 'getEmployees') {
+                    resolve({ status: 'success', data: localData });
+                } 
+                else if (action === 'saveEmployee') {
+                    if (payload.ID) {
+                        let idx = localData.findIndex(x => x.ID === payload.ID);
+                        if (idx > -1) localData[idx] = { ...localData[idx], ...payload };
+                    } else {
+                        payload.ID = Date.now().toString();
+                        payload.Status = 'รอจัดทำ';
+                        localData.push(payload);
+                    }
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success', data: { id: payload.ID } });
+                } 
+                else if (action === 'deleteEmployee') {
+                    localData = localData.filter(x => String(x.ID) !== String(payload.ID));
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success' });
+                }
+                else if (action === 'recordPrint') {
+                    payload.forEach(r => {
+                        let idx = localData.findIndex(x => x.ID === r.EmployeeID);
+                        if (idx > -1) localData[idx].Status = 'พิมพ์แล้ว';
+                    });
+                    localStorage.setItem('gov_db', JSON.stringify(localData));
+                    resolve({ status: 'success' });
+                }
+                else if (action === 'getAgencySettings') {
+                    let settings = JSON.parse(localStorage.getItem('gov_agency_settings')) || agencySettings;
+                    resolve({ status: 'success', data: settings });
+                }
+                else if (action === 'saveAgencySettings') {
+                    localStorage.setItem('gov_agency_settings', JSON.stringify(payload));
+                    resolve({ status: 'success' });
+                }
+            });
+        }
+
+        function handleGoogleSheetUsers(action, payload) {
+            return fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: action, payload: payload, data: payload })
+            })
+            .then(res => res.json());
+        }
+
+        function loadEmployees() {
+            fetchAPI('getEmployees').then(res => {
+                if(res.status === 'success') {
+                    db.employees = res.data;
+                    updateDashboard();
+                    if(!document.getElementById('sec-employees').classList.contains('hidden')) {
+                        renderEmployeeTable();
+                    }
+                }
+            });
+        }
+
+        function deleteEmployee(id) {
+            if(!confirm('คุณต้องการลบข้อมูลพนักงานรายนี้ใช่หรือไม่?')) return;
+            fetchAPI('deleteEmployee', { ID: id }).then(res => {
+                if(res.status === 'success') {
+                    showToast('ลบข้อมูลเรียบร้อยแล้ว');
+                    loadEmployees();
+                } else {
+                    showToast('ไม่สามารถลบข้อมูลได้', 'error');
+                }
+            });
+        }
+
+        function loadAgencySettings() {
+            fetchAPI('getAgencySettings').then(res => {
+                if(res && res.status === 'success' && res.data) {
+                    agencySettings = res.data;
+                    applyAgencySettingsUI();
+                }
+                checkAgencyDefaultSetup();
+            });
+        }
+
+        // ตรวจสอบว่ายังไม่ได้ตั้งค่าหน่วยงาน (ยังเป็นค่าเริ่มต้น "เทศบาลตำบลตัวอย่าง") หรือไม่
+        function checkAgencyDefaultSetup() {
+            if (agencySettings.agency_name === 'เทศบาลตำบลตัวอย่าง') {
+                openSetupWarningModal();
+            }
+        }
+
+        function openSetupWarningModal() {
+            document.getElementById('modal-setup-warning').classList.remove('hidden');
+        }
+
+        function closeSetupWarningModal() {
+            document.getElementById('modal-setup-warning').classList.add('hidden');
+        }
+
+        function applyAgencySettingsUI() {
+            document.getElementById('f_head_name').value = agencySettings.head_name || '';
+            document.getElementById('f_head_position').value = agencySettings.head_position || '';
+            document.getElementById('f_agency_name').value = agencySettings.agency_name || '';
+            document.getElementById('f_province').value = agencySettings.province || '';
+            document.getElementById('f_agency_logo').value = agencySettings.agency_logo || '';
+
+            const headerLogoImg = document.getElementById('header-logo');
+            const headerLogoIcon = document.getElementById('header-logo-icon');
+
+            if(agencySettings.agency_logo) {
+                document.getElementById('agency_logo_preview').src = agencySettings.agency_logo;
+                document.getElementById('agency_logo_preview').classList.remove('hidden');
+                document.getElementById('agency_logo_placeholder').classList.add('hidden');
+                
+                if (headerLogoImg) {
+                    headerLogoImg.src = agencySettings.agency_logo;
+                    headerLogoImg.classList.remove('hidden');
+                }
+                if (headerLogoIcon) headerLogoIcon.classList.add('hidden');
+            } else {
+                document.getElementById('agency_logo_preview').classList.add('hidden');
+                document.getElementById('agency_logo_placeholder').classList.remove('hidden');
+                
+                if (headerLogoImg) headerLogoImg.classList.add('hidden');
+                if (headerLogoIcon) headerLogoIcon.classList.remove('hidden');
+            }
+
+            if(agencySettings.agency_name) {
+                const prov = agencySettings.province ? ` ${agencySettings.province}` : '';
+                document.getElementById('header-org-name').innerText = `${agencySettings.agency_name}${prov}`;
+            }
+        }
+
+        function handleAgencyLogoUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            if(file.size > 2 * 1024 * 1024) {
+                showToast('ขนาดไฟล์ใหญ่เกินไป (ต้องไม่เกิน 2MB)', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64Img = event.target.result;
+                document.getElementById('agency_logo_preview').src = base64Img;
+                document.getElementById('agency_logo_preview').classList.remove('hidden');
+                document.getElementById('agency_logo_placeholder').classList.add('hidden');
+                document.getElementById('f_agency_logo').value = base64Img;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveAgencySettings() {
+            const payload = {
+                head_name: document.getElementById('f_head_name').value,
+                head_position: document.getElementById('f_head_position').value,
+                agency_name: document.getElementById('f_agency_name').value,
+                province: document.getElementById('f_province').value,
+                agency_logo: document.getElementById('f_agency_logo').value
+            };
+
+            agencySettings = payload;
+            applyAgencySettingsUI();
+
+            fetchAPI('saveAgencySettings', payload).then(res => {
+                showToast('บันทึกการตั้งค่าหน่วยงานเรียบร้อยแล้ว', 'success');
+            });
+        }
+
+        function resetAgencySettings() {
+            if(!confirm('คุณต้องการรีเซ็ตค่าการตั้งค่าหน่วยงานเป็นค่าเริ่มต้นใช่หรือไม่?')) return;
+            agencySettings = {
+                head_name: 'นายสมศักดิ์ รักชาติ', 
+                head_position: 'นายกเทศมนตรีตำบลตัวอย่าง', 
+                agency_name: 'เทศบาลตำบลตัวอย่าง', 
+                province: 'จังหวัดตัวอย่าง', 
+                agency_logo: '' 
+            };
+            applyAgencySettingsUI();
+            saveAgencySettings();
+            showToast('รีเซ็ตการตั้งค่าหน่วยงานสำเร็จ', 'success');
+        }
+
+        function saveSystemSettings() {
+            GAS_URL = document.getElementById('set_gas_url').value.trim();
+            localStorage.setItem('GAS_URL', GAS_URL);
+            USE_LOCAL = GAS_URL === '';
+            showToast('บันทึกการเชื่อมต่อสำเร็จ ระบบจะรีโหลด...');
+            setTimeout(()=>location.reload(), 1000);
+        }
+
+        function updateDashboard() {
+            document.getElementById('stat-total').innerText = db.employees.length;
+            document.getElementById('stat-pending').innerText = db.employees.filter(e => e.Status === 'รอจัดทำ' || e.Status === 'พร้อมพิมพ์').length;
+            document.getElementById('stat-printed').innerText = db.employees.filter(e => e.Status === 'พิมพ์แล้ว').length;
+            
+            let exp = 0;
+            const now = new Date();
+            db.employees.forEach(e => {
+                if(e.ExpireDate && new Date(e.ExpireDate) < now) exp++;
+            });
+            document.getElementById('stat-expired').innerText = exp;
+        }
+
+        function renderEmployeeTable() {
+            const tbody = document.getElementById('emp-table-body');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            tbody.innerHTML = '';
+            
+            db.employees.forEach(emp => {
+                const searchStr = `${emp.EmployeeName} ${emp.CitizenID} ${emp.CardNumber}`.toLowerCase();
+                if (search && !searchStr.includes(search)) return;
+
+                const statusColor = emp.Status === 'พิมพ์แล้ว' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-3 text-center"><input type="checkbox" class="emp-checkbox" value="${emp.ID}"></td>
+                    <td class="p-3 font-mono text-xs">${formatCitizenId(emp.CitizenID || '')}</td>
+                    <td class="p-3 font-semibold">${emp.EmployeeName || '-'}</td>
+                    <td class="p-3 text-xs">${emp.PositionName || '-'}<br><span class="text-gray-400">${emp.SchoolAffiliation || '-'}</span></td>
+                    <td class="p-3 text-xs">${emp.PositionType || '-'}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${statusColor}">${emp.Status}</span></td>
+                    <td class="p-3 text-center">
+                        <button onclick="editEmployee('${emp.ID}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded" title="แก้ไข"><i class="fa-solid fa-edit"></i></button>
+                        <button onclick="previewCard(['${emp.ID}'])" class="text-blue-700 hover:bg-gray-200 p-2 rounded ml-1" title="ดูตัวอย่างบัตร"><i class="fa-solid fa-id-card"></i></button>
+                        <button onclick="deleteEmployee('${emp.ID}')" class="text-red-500 hover:bg-red-50 p-2 rounded ml-1" title="ลบข้อมูล"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleSelectAll() {
+            const chk = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = chk);
+        }
+
+        function saveEmployee(e) {
+            e.preventDefault();
+            const payload = {
+                ID: document.getElementById('f_id').value,
+                CitizenID: document.getElementById('f_citizenId').value,
+                EmployeeName: document.getElementById('f_employeeName').value,
+                SchoolAffiliation: document.getElementById('f_schoolAffiliation').value,
+                PositionName: document.getElementById('f_positionName').value,
+                AcademicStanding: document.getElementById('f_academicStanding').value,
+                PositionType: document.getElementById('f_positionType').value,
+                CardType: document.getElementById('f_cardType').value,
+                Gender: document.getElementById('f_gender').value,
+                BloodType: document.getElementById('f_bloodType').value,
+                CardNumber: document.getElementById('f_cardNum').value,
+                IssueDate: document.getElementById('f_issueDate').value,
+                ExpireDate: document.getElementById('f_expireDate').value
+            };
+
+            const btn = e.submitter;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังบันทึก';
+            btn.disabled = true;
+
+            fetchAPI('saveEmployee', payload).then(res => {
+                showToast('บันทึกข้อมูลเรียบร้อย');
+                loadEmployees();
+                nav('employees');
+            }).finally(() => {
+                btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> บันทึกข้อมูล';
+                btn.disabled = false;
+            });
+        }
+
+        function editEmployee(id) {
+            if (!db.employees || db.employees.length === 0) {
+                showToast('ยังไม่มีข้อมูลในระบบ หรือกำลังโหลดข้อมูล กรุณารอสักครู่', 'error');
+                return;
+            }
+            const emp = db.employees.find(x => String(x.ID) === String(id));
+            if(!emp) {
+                showToast('ไม่พบข้อมูลพนักงานรายนี้', 'error');
+                return;
+            }
+            
+            populateMasterDropdowns();
+
+            document.getElementById('form-title').innerText = 'แก้ไขข้อมูลบุคลากร';
+            document.getElementById('f_id').value = emp.ID;
+            document.getElementById('f_citizenId').value = formatCitizenId(emp.CitizenID || '');
+            document.getElementById('f_employeeName').value = emp.EmployeeName || '';
+            document.getElementById('f_schoolAffiliation').value = emp.SchoolAffiliation || '';
+            document.getElementById('f_positionName').value = emp.PositionName || '';
+            document.getElementById('f_academicStanding').value = emp.AcademicStanding || '';
+            document.getElementById('f_positionType').value = emp.PositionType || '';
+            document.getElementById('f_cardType').value = emp.CardType || '';
+            document.getElementById('f_gender').value = emp.Gender || '';
+            document.getElementById('f_bloodType').value = emp.BloodType || '';
+            document.getElementById('f_cardNum').value = emp.CardNumber || '';
+            
+            const formatD = (dStr) => dStr ? new Date(dStr).toISOString().split('T')[0] : '';
+            if (issuePicker) {
+                const issueDateStr = formatD(emp.IssueDate);
+                issuePicker.setDate(issueDateStr, true);
+                if (emp.IssueDate) {
+                    calculateAndSetExpireDate(new Date(emp.IssueDate));
+                }
+            }
+            if (emp.ExpireDate && expirePicker) {
+                expirePicker.setDate(formatD(emp.ExpireDate), true);
+                formatBuddhistYear(expirePicker);
+            }
+            
+            toggleExecutiveField();
+            nav('form');
+        }
+
+        function getMockEmp() {
+            return {
+                CitizenID: '1 2345 67890 12 3', EmployeeName: 'นายตัวอย่าง ทดสอบระบบ',
+                PositionName: 'นักวิชาการตัวอย่างชำนาญการพิเศษ', AcademicStanding: '(นักบริหารงานท้องถิ่น)', CardNumber: 'TEST-001',
+                BloodType: 'โอ', PositionType: 'พนักงานเทศบาล', CardType: 'บัตรประจำตัวเจ้าหน้าที่รัฐ', IssueDate: '2026-08-22', ExpireDate: '2032-08-21'
+            };
+        }
+
+        function buildTemplateConfigUI() {
+            const p = document.getElementById('config-panel');
+            p.innerHTML = '';
+            
+            const createGroup = (title, keys) => {
+                let html = `<div class="bg-gray-50 p-3 rounded border border-gray-200 transition-all duration-200" data-group-key="${keys[0].id}"><h4 class="font-semibold text-blue-600 mb-2 text-sm">${title}</h4><div class="grid grid-cols-2 gap-2">`;
+                keys.forEach(k => {
+                    html += `<div><label class="block text-xs text-gray-500">${k.label}</label>
+                             <input type="number" step="0.1" id="cfg_${k.id}" value="${tplConfig[k.id] ?? 0}" oninput="updateConfigLive()" class="w-full border rounded px-2 py-1 text-sm"></div>`;
+                });
+                html += `</div></div>`;
+                p.innerHTML += html;
+            }
+
+            createGroup('เลขบัตรประชาชน', [{id:'citizenIdX', label:'แกน X (%)'}, {id:'citizenIdY', label:'แกน Y (%)'}, {id:'citizenIdSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อ-นามสกุล', [{id:'nameX', label:'แกน X (%)'}, {id:'nameY', label:'แกน Y (%)'}, {id:'nameSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ตำแหน่ง', [{id:'positionX', label:'แกน X (%)'}, {id:'positionY', label:'แกน Y (%)'}, {id:'positionSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อสายงานผู้บริหาร', [{id:'academicStandingX', label:'แกน X (%)'}, {id:'academicStandingY', label:'แกน Y (%)'}, {id:'academicStandingSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ประเภทของบัตร', [{id:'cardTypeX', label:'แกน X (%)'}, {id:'cardTypeY', label:'แกน Y (%)'}, {id:'cardTypeSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ประเภทพนักงาน', [{id:'positionTypeX', label:'แกน X (%)'}, {id:'positionTypeY', label:'แกน Y (%)'}, {id:'positionTypeSize', label:'ขนาด Font (vw)'}]);
+            createGroup('หมู่โลหิต', [{id:'bloodTypeX', label:'แกน X (%)'}, {id:'bloodTypeY', label:'แกน Y (%)'}, {id:'bloodTypeSize', label:'ขนาด Font (vw)'}]);
+            createGroup('เลขที่บัตร', [{id:'cardNumX', label:'แกน X (%)'}, {id:'cardNumY', label:'แกน Y (%)'}, {id:'cardNumSize', label:'ขนาด Font (vw)'}]);
+            createGroup('วันที่ออก-หมดอายุ', [
+                {id:'issueDateX', label:'ออกบัตร X (%)'}, {id:'issueDateY', label:'ออกบัตร Y (%)'},
+                {id:'expireDateX', label:'หมดอายุ X (%)'}, {id:'expireDateY', label:'หมดอายุ Y (%)'},
+                {id:'dateSize', label:'ขนาด Font (vw)'}
+            ]);
+            
+            createGroup('ชื่อนายก อปท. (ตั้งค่าหน่วยงาน)', [{id:'headNameX', label:'แกน X (%)'}, {id:'headNameY', label:'แกน Y (%)'}, {id:'headNameSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ตำแหน่งนายก อปท.', [{id:'headPositionX', label:'แกน X (%)'}, {id:'headPositionY', label:'แกน Y (%)'}, {id:'headPositionSize', label:'ขนาด Font (vw)'}]);
+            createGroup('ชื่อ อปท. + จังหวัด', [{id:'agencyProvinceX', label:'แกน X (%)'}, {id:'agencyProvinceY', label:'แกน Y (%)'}, {id:'agencyProvinceSize', label:'ขนาด Font (vw)'}]);
+        }
+
+        function updateConfigLive() {
+            for(let key in tplConfig) {
+                let el = document.getElementById(`cfg_${key}`);
+                if(el) tplConfig[key] = parseFloat(el.value);
+            }
+            renderPreviewBoard(db.employees[0] || getMockEmp(), 'editor-preview-board');
+        }
+
+        function saveTemplateSettings() {
+            localStorage.setItem('gov_tpl_config', JSON.stringify(tplConfig));
+            showToast('บันทึกตำแหน่ง Template สำเร็จ');
+            if(!USE_LOCAL) fetchAPI('saveSettings', { TemplateConfig: tplConfig });
+        }
+
+        function highlightConfigGroup(fieldId) {
+            let keyX = fieldId + 'X';
+            if (fieldId === 'issue') keyX = 'issueDateX';
+            if (fieldId === 'expire') keyX = 'expireDateX';
+
+            const inputX = document.getElementById(`cfg_${keyX}`);
+            if (!inputX) return;
+
+            const groupDiv = inputX.closest('[data-group-key]');
+            if (groupDiv) {
+                document.querySelectorAll('#config-panel [data-group-key]').forEach(el => {
+                    el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+                });
+                groupDiv.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+                groupDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                inputX.focus();
+            }
+        }
+
+        function attachDragAndDropToEditor() {
+            const container = document.getElementById('editor-preview-board');
+            if (!container) return;
+
+            const items = container.querySelectorAll('.overlay-item');
+            items.forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    
+                    const fieldId = item.id.replace('editor-preview-board_', '');
+                    highlightConfigGroup(fieldId);
+
+                    let keyX = fieldId + 'X';
+                    let keyY = fieldId + 'Y';
+                    if (fieldId === 'issue') { keyX = 'issueDateX'; keyY = 'issueDateY'; }
+                    if (fieldId === 'expire') { keyX = 'expireDateX'; keyY = 'expireDateY'; }
+
+                    const rect = container.getBoundingClientRect();
+                    const startMouseX = e.clientX;
+                    const startMouseY = e.clientY;
+                    const initialX = tplConfig[keyX] || 0;
+                    const initialY = tplConfig[keyY] || 0;
+
+                    const onMouseMove = (moveEvent) => {
+                        const deltaX = ((moveEvent.clientX - startMouseX) / rect.width) * 100;
+                        const deltaY = ((moveEvent.clientY - startMouseY) / rect.height) * 100;
+
+                        const newX = parseFloat(Math.max(0, Math.min(100, initialX + deltaX)).toFixed(1));
+                        const newY = parseFloat(Math.max(0, Math.min(100, initialY + deltaY)).toFixed(1));
+
+                        tplConfig[keyX] = newX;
+                        tplConfig[keyY] = newY;
+
+                        const inputX = document.getElementById(`cfg_${keyX}`);
+                        const inputY = document.getElementById(`cfg_${keyY}`);
+                        if (inputX) inputX.value = newX;
+                        if (inputY) inputY.value = newY;
+
+                        item.style.left = newX + '%';
+                        item.style.top = newY + '%';
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            });
+        }
+
+        function renderPreviewBoard(emp, targetContainerId) {
+            const container = document.getElementById(targetContainerId);
+            if(!container) return;
+
+            const formatThaiDate = (dStr) => {
+                if(!dStr) return '-';
+                const d = new Date(dStr);
+                if(isNaN(d.getTime())) return '-';
+                const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+                return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()+543}`;
+            };
+
+            let html = `<img src="card_template.png" class="card-bg" alt="Template">`;
+            
+            const createTxt = (id, text, x, y, size, fw='300') => {
+                return `<div id="${targetContainerId}_${id}" class="overlay-item" style="left:${x}%; top:${y}%; font-size:calc(var(--card-width) * ${size/100}); font-weight:${fw}; font-family: 'Sarabun', sans-serif !important;">${text}</div>`;
+            };
+
+            const formattedCitizenId = formatCitizenId(emp.CitizenID || '-');
+
+            html += createTxt('citizenId', formattedCitizenId, tplConfig.citizenIdX, tplConfig.citizenIdY, tplConfig.citizenIdSize, '300');
+            html += createTxt('name', emp.EmployeeName||'-', tplConfig.nameX, tplConfig.nameY, tplConfig.nameSize, '300');
+            html += createTxt('position', emp.PositionName||'-', tplConfig.positionX, tplConfig.positionY, tplConfig.positionSize, '300');
+
+            const academicVal = emp.AcademicStanding ? emp.AcademicStanding : (targetContainerId === 'editor-preview-board' ? '(นักบริหารงานท้องถิ่น)' : '');
+            if (academicVal) {
+                html += createTxt('academicStanding', academicVal, tplConfig.academicStandingX, tplConfig.academicStandingY, tplConfig.academicStandingSize, '300');
+            }
+            
+            const cardTypeVal = emp.CardType ? emp.CardType : (targetContainerId === 'editor-preview-board' ? 'บัตรประจำตัวเจ้าหน้าที่รัฐ' : '');
+            html += createTxt('cardType', cardTypeVal, tplConfig.cardTypeX, tplConfig.cardTypeY, tplConfig.cardTypeSize, '300');
+
+            const positionTypeVal = emp.PositionType ? emp.PositionType : (targetContainerId === 'editor-preview-board' ? 'พนักงานเทศบาล' : '');
+            html += createTxt('positionType', positionTypeVal, tplConfig.positionTypeX, tplConfig.positionTypeY, tplConfig.positionTypeSize, '300');
+            
+            const bloodTypeVal = emp.BloodType ? ` ${emp.BloodType}` : (targetContainerId === 'editor-preview-board' ? 'หมู่โลหิต โอ' : '');
+            html += createTxt('bloodType', bloodTypeVal, tplConfig.bloodTypeX, tplConfig.bloodTypeY, tplConfig.bloodTypeSize, '300');
+
+            html += createTxt('cardNum', emp.CardNumber||'-', tplConfig.cardNumX, tplConfig.cardNumY, tplConfig.cardNumSize, '300');
+            html += createTxt('issue', formatThaiDate(emp.IssueDate), tplConfig.issueDateX, tplConfig.issueDateY, tplConfig.dateSize, '300');
+            html += createTxt('expire', formatThaiDate(emp.ExpireDate), tplConfig.expireDateX, tplConfig.expireDateY || tplConfig.issueDateY, tplConfig.dateSize, '300');
+
+            const headName = agencySettings.head_name || 'นายกเทศมนตรี (กรุณาตั้งค่า)';
+            const headPos = agencySettings.head_position || 'ตำแหน่งผู้บริหาร';
+            const agencyProv = (agencySettings.agency_name || 'ชื่อ อปท.') + (agencySettings.province ? ` ${agencySettings.province}` : '');
+
+            html += createTxt('headName', headName, tplConfig.headNameX, tplConfig.headNameY, tplConfig.headNameSize, '300');
+            html += createTxt('headPosition', headPos, tplConfig.headPositionX, tplConfig.headPositionY, tplConfig.headPositionSize, '300');
+            html += createTxt('agencyProvince', agencyProv, tplConfig.agencyProvinceX, tplConfig.agencyProvinceY, tplConfig.agencyProvinceSize, '300');
+
+            container.innerHTML = `<div style="position:absolute; inset:0; --card-width: 100cqw; container-type: inline-size;">${html}</div>`;
+
+            if (targetContainerId === 'editor-preview-board') {
+                attachDragAndDropToEditor();
+            }
+        }
+
+        function prepareBatchPrint() {
+            const checked = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
+            if(checked.length === 0) {
+                showToast('กรุณาเลือกเจ้าหน้าที่อย่างน้อย 1 รายการ', 'error');
+                return;
+            }
+            previewCard(checked);
+        }
+
+        function previewCard(empIds) {
+            if (!db.employees || db.employees.length === 0) {
+                showToast('ยังไม่มีข้อมูลในระบบ', 'error');
+                return;
+            }
+            
+            currentPrintList = [];
+            const printPreviewContainer = document.getElementById('print-preview-container');
+            printPreviewContainer.innerHTML = '';
+
+            empIds.forEach((id) => {
+                const emp = db.employees.find(x => String(x.ID) === String(id));
+                if(!emp) return;
+
+                currentPrintList.push(emp);
+                
+                const cardDiv = document.createElement('div');
+                const uuid = 'prev_' + Math.random().toString(36).substring(7);
+                cardDiv.id = uuid;
+                cardDiv.className = 'card-preview-container rounded-lg overflow-hidden shrink-0';
+                printPreviewContainer.appendChild(cardDiv);
+                
+                renderPreviewBoard(emp, uuid);
+            });
+
+            if(currentPrintList.length > 0) {
+                nav('print-preview');
+            }
+        }
+
+        function executePrint() {
+            if(currentPrintList.length === 0) return;
+
+            const printSection = document.getElementById('print-section');
+            printSection.innerHTML = '';
+
+            currentPrintList.forEach(emp => {
+                const cardDiv = document.createElement('div');
+                const uuid = 'print_' + Math.random().toString(36).substring(7);
+                cardDiv.id = uuid;
+                cardDiv.className = 'print-card-wrapper';
+                printSection.appendChild(cardDiv);
+                
+                renderPreviewBoard(emp, uuid);
+            });
+
+            setTimeout(() => {
+                window.print();
+                
+                if(confirm('การพิมพ์เสร็จสิ้นและสมบูรณ์หรือไม่? (กด OK เพื่อบันทึกประวัติการพิมพ์)')) {
+                    const printPayload = currentPrintList.map(e => ({ EmployeeID: e.ID, CardNumber: e.CardNumber, EmployeeName: e.EmployeeName }));
+                    fetchAPI('recordPrint', printPayload).then(() => {
+                        showToast('บันทึกประวัติการพิมพ์สำเร็จ', 'success');
+                        loadEmployees(); 
+                    });
+                }
+            }, 500);
+        }
+
+        function initFormListeners() {
+            const positionInput = document.getElementById('f_positionName');
+            const citizenIdInput = document.getElementById('f_citizenId');
+
+            if (positionInput) {
+                positionInput.addEventListener('input', toggleExecutiveField);
+            }
+
+            if (citizenIdInput) {
+                citizenIdInput.addEventListener('input', function() {
+                    this.value = formatCitizenId(this.value);
+                });
+            }
+        }
+
+        function toggleExecutiveField() {
+            const positionInput = document.getElementById('f_positionName');
+            const academicStandingWrapper = document.getElementById('f_academic_standing_wrapper');
+            const academicStandingInput = document.getElementById('f_academicStanding');
+
+            if (!positionInput || !academicStandingWrapper) return;
+
+            const executivePrefixes = ['หัวหน้าสำนัก', 'ผู้อำนวยการกอง', 'หัวหน้าฝ่าย', 'ปลัด', 'รองปลัด'];
+            const val = positionInput.value.trim();
+            const isExecutive = executivePrefixes.some(prefix => val.startsWith(prefix));
+
+            if (isExecutive) {
+                academicStandingWrapper.classList.remove('hidden');
+            } else {
+                academicStandingWrapper.classList.add('hidden');
+                if (academicStandingInput) academicStandingInput.value = '';
+            }
+        }
+
+        function formatCitizenId(value) {
+            const cleanValue = value.replace(/\D/g, '');
+            const limitValue = cleanValue.substring(0, 13);
+            
+            let formattedValue = '';
+            if (limitValue.length > 0) formattedValue += limitValue.substring(0, 1);
+            if (limitValue.length > 1) formattedValue += ' ' + limitValue.substring(1, 5);
+            if (limitValue.length > 5) formattedValue += ' ' + limitValue.substring(5, 10);
+            if (limitValue.length > 10) formattedValue += ' ' + limitValue.substring(10, 12);
+            if (limitValue.length > 12) formattedValue += ' ' + limitValue.substring(12, 13);
+
+            return formattedValue;
+        }
+    </script>
+</body>
+</html>
